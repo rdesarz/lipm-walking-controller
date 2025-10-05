@@ -8,7 +8,7 @@ from qpsolvers import solve_qp
 
 
 @dataclass
-class QPParams:
+class InvKinSolverParams:
     fixed_foot_frame: int
     moving_foot_frame: int
     torso_frame: int
@@ -40,7 +40,7 @@ def se3_task_error_and_jacobian(model, data, q, frame_id, M_des):
     return e6, Jtask
 
 
-def qp_inverse_kinematics(q, com_target, oMf_target, params: QPParams):
+def solve_inverse_kinematics(q, com_target, oMf_target, params: InvKinSolverParams):
     pin.forwardKinematics(params.model, params.data, q)
     pin.updateFramePlacements(params.model, params.data)
 
