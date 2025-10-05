@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import numpy as np
 
 from scipy.linalg import solve_discrete_are
@@ -32,18 +34,28 @@ def compute_zmp_ref(t, com_initial_pose, steps, ss_t, ds_t):
     return zmp_ref
 
 
+@dataclass
+class PreviewControllerMatrices:
+    A: np.ndarray
+    B: np.ndarray
+    C: np.ndarray
+    Gi: np.ndarray
+    Gx: np.ndarray
+    Gd: np.ndarray
+
+
 def compute_preview_control_matrices(dt, zc, g, Qe, Qx, R, n_preview_steps):
     # Discrete cart-table model with jerk input
     A = np.array([[1.0, dt, 0.5 * dt * dt], [0.0, 1.0, dt], [0.0, 0.0, 1.0]], dtype=float)
     B = np.array([[dt**3 / 6.0], [dt**2 / 2.0], [dt]], dtype=float)
-    C = np.array([[1.0, 0.0, -zc / g]], dtype=float)  # 1x3
+    C = np.array([[1.0, 0.0, -zc / g]], dtype=float)
 
-    A1 = np.block([[np.eye(1), C @ A], [np.zeros((3, 1)), A]])  # 4x4
-    B1 = np.vstack((C @ B, B))  # 4x1
-    I1 = np.vstack((np.array([1]), np.zeros((3, 1))))  # 4x1
+    A1 = np.block([[np.eye(1), C @ A], [np.zeros((3, 1)), A]])
+    B1 = np.vstack((C @ B, B))
+    I1 = np.vstack((np.array([1]), np.zeros((3, 1))))
     F = np.vstack((C @ A, A))
 
-    Q = np.block([[Qe, np.zeros((1, 3))], [np.zeros((3, 1)), Qx]])  # 4x4
+    Q = np.block([[Qe, np.zeros((1, 3))], [np.zeros((3, 1)), Qx]])
 
     # Compute K by solving Ricatti equation
     K = solve_discrete_are(A1, B1, Q, R)
@@ -62,4 +74,21 @@ def compute_preview_control_matrices(dt, zc, g, Qe, Qx, R, n_preview_steps):
         Gd[l + 1] = np.linalg.inv(R + B1.T @ K @ B1) @ B1.T @ X
         X = Ac.T @ X
 
-    return A, B, C, Gd, Gx, Gi
+    return PreviewControllerMatrices(A=A, B=B, C=C, Gi=Gi, Gx=Gx, Gd=Gd)
+
+
+def update_control(ctrl_mat: PreviewControllerMatrices, current_zmp, zmp_ref, x, y):
+    u = np.zeros(2)
+    u[0] = -ctrl_mat.Gi * x[0] - ctrl_mat.Gx @ x[1:] + ctrl_mat.Gd.T @ zmp_ref[:, 0]
+    u[1] = -ctrl_mat.Gi * y[0] - ctrl_mat.Gx @ y[1:] + ctrl_mat.Gd.T @ zmp_ref[:, 1]
+
+    # Compute integrated error
+    x_next = np.zeros(len(ctrl_mat.A) + 1)
+    y_next = np.zeros(len(ctrl_mat.A) + 1)
+    x_next[0] = x[0] + (ctrl_mat.C @ x[1:] - current_zmp[0])
+    y_next[0] = y[0] + (ctrl_mat.C @ y[1:] - current_zmp[1])
+
+    x_next[1:] = ctrl_mat.A @ x[1:] + ctrl_mat.B.ravel() * u[0]
+    y_next[1:] = ctrl_mat.A @ y[1:] + ctrl_mat.B.ravel() * u[1]
+
+    return u, x_next, y_next

@@ -6,8 +6,10 @@ from shapely import Polygon
 
 from lipm_walking_controller.controller import (
     compute_zmp_ref,
-    initialize_preview_control,
+    compute_preview_control_matrices,
+    update_control,
 )
+
 from lipm_walking_controller.foot import get_active_polygon, compute_feet_path_and_poses
 
 if __name__ == "__main__":
@@ -60,16 +62,12 @@ if __name__ == "__main__":
     zmp_ref = compute_zmp_ref(t, com_initial_pose, steps_pose, t_ss, t_ds)
 
     # Initialize controller
-    A, B, C, Gd, Gx, Gi = initialize_preview_control(
-        dt, zc, g, Qe, Qx, R, n_preview_steps
-    )
+    ctrler_mat = compute_preview_control_matrices(dt, zc, g, Qe, Qx, R, n_preview_steps)
 
     T = len(t)
     u = np.zeros((T, 2))
 
-    zmp_padded = np.vstack(
-        [zmp_ref, np.repeat(zmp_ref[-1][None, :], n_preview_steps, axis=0)]
-    )
+    zmp_padded = np.vstack([zmp_ref, np.repeat(zmp_ref[-1][None, :], n_preview_steps, axis=0)])
 
     x0 = np.array([0.0, com_initial_pose[0], 0.0, 0.0], dtype=float)
     y0 = np.array([0.0, com_initial_pose[1], 0.0, 0.0], dtype=float)
@@ -108,7 +106,7 @@ if __name__ == "__main__":
     axes[1, 1].set_title("ZMP reference vs COM position on Y-axis")
 
     axes[1, 0].plot(
-        np.arange(1, n_preview_steps) * dt, Gd, marker=".", label="Preview gains [y]"
+        np.arange(1, n_preview_steps) * dt, ctrler_mat.Gd, marker=".", label="Preview gains [y]"
     )
     axes[1, 0].grid(True)
     axes[1, 0].legend()
@@ -130,9 +128,7 @@ if __name__ == "__main__":
     (zmp_path_line,) = ax_live_plot.plot(
         zmp_ref[:, 0], zmp_ref[:, 1], linestyle="-", label="ZMP ref", alpha=1.0
     )
-    (com_path_line,) = ax_live_plot.plot(
-        [], [], linestyle="-", label="CoM", color="red"
-    )
+    (com_path_line,) = ax_live_plot.plot([], [], linestyle="-", label="CoM", color="red")
 
     active_poly_patch = None
 
@@ -160,16 +156,9 @@ if __name__ == "__main__":
         # Get zmp ref horizon
         zmp_ref_horizon = zmp_padded[k + 1 : k + n_preview_steps]
 
-        # Compute uk
-        u[k, 0] = -Gi * x[k, 0] - Gx @ x[k, 1:] + Gd.T @ zmp_ref_horizon[:, 0]
-        u[k, 1] = -Gi * y[k, 0] - Gx @ y[k, 1:] + Gd.T @ zmp_ref_horizon[:, 1]
-
-        # Compute integrated error
-        x[k + 1, 0] = x[k, 0] + (C @ x[k, 1:] - zmp_ref[k, 0])
-        y[k + 1, 0] = y[k, 0] + (C @ y[k, 1:] - zmp_ref[k, 1])
-
-        x[k + 1, 1:] = A @ x[k, 1:] + B.ravel() * u[k, 0]
-        y[k + 1, 1:] = A @ y[k, 1:] + B.ravel() * u[k, 1]
+        u[k], x[k + 1], y[k + 1] = update_control(
+            ctrler_mat, zmp_ref[k], zmp_ref_horizon, x[k], y[k]
+        )
 
         # Plot
         com_xy_hist.append([x[k + 1, 1], y[k + 1, 1]])

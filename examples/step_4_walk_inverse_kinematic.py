@@ -9,9 +9,11 @@ from pinocchio.visualize import MeshcatVisualizer
 import meshcat.transformations as tf
 
 from lipm_walking_controller.controller import (
-    initialize_preview_control,
+    compute_preview_control_matrices,
     compute_zmp_ref,
+    update_control,
 )
+
 from lipm_walking_controller.foot import compute_feet_path_and_poses, get_active_polygon
 from lipm_walking_controller.inverse_kinematic import qp_inverse_kinematics, QPParams
 from lipm_walking_controller.model import Talos
@@ -41,7 +43,7 @@ if __name__ == "__main__":
     l_stride = 0.3
     max_height_foot = 0.05
 
-    A, B, C, Gd, Gx, Gi = initialize_preview_control(dt, zc, g, Qe, Qx, R, n_preview_steps)
+    ctrler_mat = compute_preview_control_matrices(dt, zc, g, Qe, Qx, R, n_preview_steps)
 
     # Initialize the model position
     talos = Talos(path_to_model="~/projects")
@@ -109,16 +111,9 @@ if __name__ == "__main__":
         # Get zmp ref horizon
         zmp_ref_horizon = zmp_padded[k + 1 : k + n_preview_steps]
 
-        # Compute uk
-        u[k, 0] = -Gi * x[k, 0] - Gx @ x[k, 1:] + Gd.T @ zmp_ref_horizon[:, 0]
-        u[k, 1] = -Gi * y[k, 0] - Gx @ y[k, 1:] + Gd.T @ zmp_ref_horizon[:, 1]
-
-        # Compute integrated error
-        x[k + 1, 0] = x[k, 0] + (C @ x[k, 1:] - zmp_ref[k, 0])
-        y[k + 1, 0] = y[k, 0] + (C @ y[k, 1:] - zmp_ref[k, 1])
-
-        x[k + 1, 1:] = A @ x[k, 1:] + B.ravel() * u[k, 0]
-        y[k + 1, 1:] = A @ y[k, 1:] + B.ravel() * u[k, 1]
+        u[k], x[k + 1], y[k + 1] = update_control(
+            ctrler_mat, zmp_ref[k], zmp_ref_horizon, x[k], y[k]
+        )
 
         com_target = np.array([x[k, 1], y[k, 1], lf_initial_pose[2] + zc])
 
