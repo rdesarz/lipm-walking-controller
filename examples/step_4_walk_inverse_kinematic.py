@@ -39,7 +39,7 @@ if __name__ == "__main__":
         Qe=1.0,
         Qx=np.zeros((3, 3)),
         R=1e-6,
-        n_preview_steps=int(round(t_preview / dt))
+        n_preview_steps=int(round(t_preview / dt)),
     )
     ctrler_mat = compute_preview_control_matrices(ctrler_params, dt)
 
@@ -77,7 +77,9 @@ if __name__ == "__main__":
     T = len(t)
     u = np.zeros((T, 2))
 
-    zmp_padded = np.vstack([zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)])
+    zmp_padded = np.vstack(
+        [zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)]
+    )
 
     x0 = np.array([0.0, com_initial_pose[0], 0.0, 0.0], dtype=float)
     y0 = np.array([0.0, com_initial_pose[1], 0.0, 0.0], dtype=float)
