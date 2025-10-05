@@ -1,8 +1,6 @@
-import math
 from time import sleep, clock_gettime
 import meshcat
 import numpy as np
-from matplotlib import pyplot as plt
 from shapely import Polygon
 import pinocchio as pin
 from pinocchio.visualize import MeshcatVisualizer
@@ -12,6 +10,7 @@ from lipm_walking_controller.controller import (
     compute_preview_control_matrices,
     compute_zmp_ref,
     update_control,
+    PreviewControllerParams,
 )
 
 from lipm_walking_controller.foot import compute_feet_path_and_poses, get_active_polygon
@@ -21,18 +20,9 @@ from lipm_walking_controller.model import Talos
 if __name__ == "__main__":
     # General parameters
     dt = 0.02  # Delta of time of the model simulation
-    g = 9.81  # Gravity
-    zc = 0.89  # Height of the COM
-    w = math.sqrt(g / zc)
 
     # Preview controller parameters
     t_preview = 1.6  # Time horizon used for the preview controller
-    n_preview_steps = int(round(t_preview / dt))
-    Qe = 1.0  # Cost on the integral error of the ZMP reference
-    Qx = np.zeros(
-        (3, 3)
-    )  # Cost on the state vector variation. Zero by default as we don't want to penalize strong variation.
-    R = 1e-6  # Cost on the input command u(t)
 
     # ZMP reference parameters
     t_ss = 1.0  # Single support phase time window
@@ -43,7 +33,15 @@ if __name__ == "__main__":
     l_stride = 0.3
     max_height_foot = 0.05
 
-    ctrler_mat = compute_preview_control_matrices(dt, zc, g, Qe, Qx, R, n_preview_steps)
+    ctrler_params = PreviewControllerParams(
+        zc=0.89,
+        g=9.81,
+        Qe=1.0,
+        Qx=np.zeros((3, 3)),
+        R=1e-6,
+        n_preview_steps=int(round(t_preview / dt))
+    )
+    ctrler_mat = compute_preview_control_matrices(ctrler_params, dt)
 
     # Initialize the model position
     talos = Talos(path_to_model="~/projects")
@@ -79,7 +77,7 @@ if __name__ == "__main__":
     T = len(t)
     u = np.zeros((T, 2))
 
-    zmp_padded = np.vstack([zmp_ref, np.repeat(zmp_ref[-1][None, :], n_preview_steps, axis=0)])
+    zmp_padded = np.vstack([zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)])
 
     x0 = np.array([0.0, com_initial_pose[0], 0.0, 0.0], dtype=float)
     y0 = np.array([0.0, com_initial_pose[1], 0.0, 0.0], dtype=float)
@@ -91,7 +89,7 @@ if __name__ == "__main__":
     sleep(0.5)
 
     # Simulate
-    params = QPParams(
+    ctrler_params = QPParams(
         fixed_foot_frame=talos.right_foot_id,
         moving_foot_frame=talos.left_foot_id,
         torso_frame=talos.torso_id,
@@ -109,28 +107,28 @@ if __name__ == "__main__":
         start = clock_gettime(0)
 
         # Get zmp ref horizon
-        zmp_ref_horizon = zmp_padded[k + 1 : k + n_preview_steps]
+        zmp_ref_horizon = zmp_padded[k + 1 : k + ctrler_params.n_preview_steps]
 
         u[k], x[k + 1], y[k + 1] = update_control(
             ctrler_mat, zmp_ref[k], zmp_ref_horizon, x[k], y[k]
         )
 
-        com_target = np.array([x[k, 1], y[k, 1], lf_initial_pose[2] + zc])
+        com_target = np.array([x[k, 1], y[k, 1], lf_initial_pose[2] + ctrler_params.zc])
 
         # Alternate between feet
         if phases[k] < 0.0:
-            params.fixed_foot_frame = talos.right_foot_id
-            params.moving_foot_frame = talos.left_foot_id
+            ctrler_params.fixed_foot_frame = talos.right_foot_id
+            ctrler_params.moving_foot_frame = talos.left_foot_id
 
             oMf_lf = pin.SE3(oMf_lf0.rotation, lf_path[k])
-            q_new, dq = qp_inverse_kinematics(q, com_target, oMf_lf, params)
+            q_new, dq = qp_inverse_kinematics(q, com_target, oMf_lf, ctrler_params)
             q = q_new
         else:
-            params.fixed_foot_frame = talos.left_foot_id
-            params.moving_foot_frame = talos.right_foot_id
+            ctrler_params.fixed_foot_frame = talos.left_foot_id
+            ctrler_params.moving_foot_frame = talos.right_foot_id
 
             oMf_rf = pin.SE3(oMf_rf0.rotation, rf_path[k])
-            q_new, dq = qp_inverse_kinematics(q, com_target, oMf_rf, params)
+            q_new, dq = qp_inverse_kinematics(q, com_target, oMf_rf, ctrler_params)
             q = q_new
 
         pin.forwardKinematics(talos.model, talos.data, q)
