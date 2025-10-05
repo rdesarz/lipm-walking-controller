@@ -48,7 +48,7 @@ if __name__ == "__main__":
     viz = MeshcatVisualizer(talos.model, talos.geom, talos.vis)
     viz.initViewer(open=True)
     viz.loadViewerModel()
-    # viz.setCameraPosition(np.array([1.0, 1.0]))
+    viz.viewer["/Cameras/default/rotated/<object>"].set_property("position", [2.5, 2.0, -2.0])
 
     oMf_rf0 = talos.data.oMf[talos.right_foot_id].copy()
     oMf_lf0 = talos.data.oMf[talos.left_foot_id].copy()
