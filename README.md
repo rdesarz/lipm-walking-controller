@@ -61,7 +61,7 @@ The resulting controller anticipates future ZMP references, ensuring stable walk
 
 - Discrete-time 3D LIPM formulation  
 - Full preview controller (state feedback, integral, preview gain)  
-- Configurable parameters: preview horizon, \( Q_e, Q_x, R \)  
+- Configurable parameters: preview horizon and weights on integral error, state and input variation $Q_e$, $Q_x$, $R$  
 - Visualization of CoM/ZMP trajectories and foot motion  
 - Inverse kinematics tracking using the Talos humanoid model  
 
@@ -86,9 +86,13 @@ This experiment demonstrates the LIPM preview control generating a stable CoM tr
 python examples/example_1_lipm_preview_control.py
 ```
 
+![](img/preview_control.gif)
+
 ### Example 2: Preview Control Demonstration
 
 Linear forward motion with sinusoidal vertical swing.
+
+<img src="img/foot_motion.png" width="48">
 
 ```bash
 python examples/example_2_feet_motion.py
