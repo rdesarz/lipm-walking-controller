@@ -67,12 +67,62 @@ The resulting controller anticipates future ZMP references, ensuring stable walk
 
 ---
 
-## 4. Experiments
 
-### 4.1 Preview Control Demonstration
+## Examples
+
+Before running an example, clone the repository and install the dependencies:
 
 ```bash
 git clone https://github.com/rdesarz/lipm-walking-controller.git
 cd lipm-walking-controller
 pip install ".[dev]"
-python examples/step_2_lipm_preview_control.py
+```
+
+### Example 1: Preview Control Demonstration
+
+This experiment demonstrates the LIPM preview control generating a stable CoM trajectory tracking a predefined ZMP reference.
+
+```bash
+python examples/example_1_lipm_preview_control.py
+```
+
+### Example 2: Preview Control Demonstration
+
+Linear forward motion with sinusoidal vertical swing.
+
+```bash
+python examples/example_2_feet_motion.py
+```
+
+### Example 3: Preview Control Demonstration
+
+Inverse kinematics are computed to track CoM and foot trajectories using the Talos model.
+This produces a full kinematic walking sequence without dynamic simulation.
+
+```bash
+python examples/example_3_walk_inverse_kinematic.py
+```
+
+## Future Work
+
+The next steps aim at extending this framework toward dynamically consistent humanoid walking:
+
+* Integration with PyBullet for physics-based evaluation
+* Disturbance rejection analysis under external perturbations
+* Development of a footstep planner for omnidirectional locomotion 
+* Integration of Model Predictive Control (MPC) for real-time trajectory optimization
+
+## References
+
+- Kajita, S., Kanehiro, F., Kaneko, K., Fujiwara, K., Harada, K., Yokoi, K., & Hirukawa, H.  
+  *Biped Walking Pattern Generation by Using Preview Control of Zero-Moment Point.*  
+  *Proceedings of the IEEE International Conference on Robotics and Automation (ICRA), 2003.*
+
+- Katayama, T., Ohki, T., Inoue, T., & Kato, T.  
+  *Design of an Optimal Controller for a Discrete-Time System Subject to Previewable Demand.*  
+  *International Journal of Control*, vol. 41, no. 3, pp. 677–699, 1985.
+
+- Caron, S.  
+  *Jacobian of a kinematic task and derivatives on manifolds.*  
+  Available online at  [https://scaron.info/robotics/jacobians.html](scaron.info/robotics/jacobian-of-a-kinematic-task-and-derivatives-on-manifolds.html), accessed 2025.  
+  (Detailed explanations and examples for frame kinematics, Jacobian computation, and task-space control using Pinocchio.)
