@@ -2,80 +2,77 @@
 
 [![Build and tests](https://github.com/rdesarz/lipm-walking-controller/actions/workflows/build.yml/badge.svg)](https://github.com/rdesarz/lipm-walking-controller/actions/workflows/build.yml)
 
-An implementation of the **Linear Inverted Pendulum Model (LIPM)** walking pattern generator using **preview control of 
-the Zero-Moment Point (ZMP)**, following _Kajita et al. “Biped Walking Pattern Generation by Using Preview Control of Zero-Moment Point.”_
+This repository presents an open-source implementation of the **Linear Inverted Pendulum Model (LIPM)** walking pattern 
+generator based on **preview control of the Zero-Moment Point (ZMP)**, following the formulation introduced 
+by _Kajita et al., “Biped Walking Pattern Generation by Using Preview Control of the Zero-Moment Point,” ICRA 2003_.
+
+---
+
+## Introduction
+
+Humanoid walking requires the generation of dynamically stable trajectories of the Center of Mass (CoM) with 
+respect to the Zero-Moment Point (ZMP). This project implements the **discrete-time LIPM** dynamics and 
+the associated **optimal preview control law**, reproducing the approach used in model-based humanoid locomotion 
+control. The framework includes visualization and inverse kinematics modules, enabling reproducible experiments 
+on trajectory generation and tracking. 
 
 ---
 
 ## Overview
 
-This project reproduces the classic preview control approach for humanoid walking:
+The objective is to reproduce and analyze the ZMP preview control pipeline:
 
-- Models the robot’s Center of Mass (CoM) with the 3D-LIPM
-- Uses preview control to generate stable CoM trajectories from a desired ZMP reference
-- Demonstrates tracking performance with plots and simple simulations
+- Model the robot’s CoM using the 3D LIPM  
+- Compute optimal CoM trajectories given a reference ZMP sequence using preview control 
+- Generate and visualize corresponding foot trajectories
+- Apply inverse kinematics to produce consistent joint motions  
 
-The implementation is kept minimal and educational, with a focus on clarity and reproducibility.
+The implementation prioritizes **clarity** and **experimental reproducibility**, making it suitable for education
+purpose.
+
+---
+
+## Methodology
+
+### Linear Inverted Pendulum Model
+
+The CoM motion is modeled by the discrete-time linearized dynamics of the inverted pendulum:
+
+\[
+\ddot{x}_c = \frac{g}{z_c} (x_c - x_z)
+\]
+
+where \( x_z \) denotes the ZMP, \( x_c \) the CoM projection, and \( z_c \) the constant CoM height.
+
+### Preview Control
+
+The control input minimizes a quadratic cost over a finite horizon:
+
+\[
+J = \sum_{k=0}^{\infty} \left( Q_e e_k^2 + x_k^T Q_x x_k + R \Delta u_k^2 \right)
+\]
+
+yielding a feedback + integral + preview law.  
+The resulting controller anticipates future ZMP references, ensuring stable walking trajectories.
 
 ---
 
 ## Features
 
-- Discrete-time LIPM dynamics
-- Optimal preview controller (integral, state feedback, preview terms)
-- Configurable preview horizon, weights `Qe`, `Qx`, `R`
-- Example walking patterns with footstep plans
-- Ready-to-run demos that plot ZMP vs CoM trajectories
+- Discrete-time 3D LIPM formulation  
+- Full preview controller (state feedback, integral, preview gain)  
+- Configurable parameters: preview horizon, \( Q_e, Q_x, R \)  
+- Visualization of CoM/ZMP trajectories and foot motion  
+- Inverse kinematics tracking using the Talos humanoid model  
 
 ---
 
-## Examples
+## 4. Experiments
 
-### ZMP preview control
+### 4.1 Preview Control Demonstration
 
 ```bash
 git clone https://github.com/rdesarz/lipm-walking-controller.git
 cd lipm-walking-controller
 pip install ".[dev]"
 python examples/step_2_lipm_preview_control.py
-```
-
-![](img/preview_control.gif)
-
-### Feet motion
-
-In this example, we generate a trajectory for the both feet of the robot. We expect the robot to move forward. The 
-trajectory of the foot is a linear on x-axis and a sinusoid on the z-axis.
-
-```bash
-git clone https://github.com/rdesarz/lipm-walking-controller.git
-cd lipm-walking-controller
-pip install ".[dev]"
-python examples/step_3_feet_motion.py
-```
-
-![](img/foot_motion.png)
-
-### Walking controller
-
-This example computes the inverse kinematic of the robot in order to track the computed COM reference trajectory as well
-as the trajectory of the feet. We obtain the cinematic of a walking robot. However it still lacks a physical engine to 
-check whether the controller is actually able to balance itself
-
-```bash
-git clone https://github.com/rdesarz/lipm-walking-controller.git
-cd lipm-walking-controller
-pip install ".[dev]"
-git clone https://github.com/stack-of-tasks/talos-data.git talos_data
-python examples/step_4_walk_inverse_kinematic.py
-```
-
----
-
-## Next Steps
-
-The aim of this project is to generate walking commands for a humanoid robot in simulation. Upcoming work:
-
-- **Physics simulation**: run the controller in Pybullet and evaluate the performance.   
-- **Disturbance handling**: simulate pushes and evaluate preview controller robustness. 
-- **Foot step planner**: add a foot step planner in order to move in any direction
