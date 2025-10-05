@@ -71,9 +71,6 @@ if __name__ == "__main__":
 
     zmp_ref = compute_zmp_ref(t, com_initial_pose[0:2], steps_pose, t_ss, t_ds)
 
-    T = len(t)
-    u = np.zeros((T, 2))
-
     zmp_padded = np.vstack(
         [zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)]
     )
@@ -96,7 +93,7 @@ if __name__ == "__main__":
         dt=dt,
     )
 
-    for k in range(T):
+    for k in range(len(t)):
         start = clock_gettime(0)
 
         # Get zmp ref horizon
@@ -106,6 +103,7 @@ if __name__ == "__main__":
             ctrler_mat, zmp_ref[k], zmp_ref_horizon, x_k.copy(), y_k.copy()
         )
 
+        # The CoM target is meant to follow the computed x and y and stay at constant height zc from the feet
         com_target = np.array([x_k[1], y_k[1], lf_initial_pose[2] + ctrler_params.zc])
 
         # Alternate between feet
