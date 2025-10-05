@@ -1,7 +1,6 @@
 from time import sleep, clock_gettime
 import meshcat
 import numpy as np
-from shapely import Polygon
 import pinocchio as pin
 from pinocchio.visualize import MeshcatVisualizer
 import meshcat.transformations as tf
@@ -13,7 +12,7 @@ from lipm_walking_controller.controller import (
     PreviewControllerParams,
 )
 
-from lipm_walking_controller.foot import compute_feet_path_and_poses, get_active_polygon
+from lipm_walking_controller.foot import compute_feet_path_and_poses
 from lipm_walking_controller.inverse_kinematic import solve_inverse_kinematics, InvKinSolverParams
 from lipm_walking_controller.model import Talos
 
@@ -27,8 +26,6 @@ if __name__ == "__main__":
     # ZMP reference parameters
     t_ss = 1.0  # Single support phase time window
     t_ds = 0.2  # Double support phase time window
-
-    foot_shape = Polygon(((0.11, 0.05), (0.11, -0.05), (-0.11, -0.05), (-0.11, 0.05)))
     n_steps = 25
     l_stride = 0.3
     max_height_foot = 0.05
@@ -81,12 +78,8 @@ if __name__ == "__main__":
         [zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)]
     )
 
-    x0 = np.array([0.0, com_initial_pose[0], 0.0, 0.0], dtype=float)
-    y0 = np.array([0.0, com_initial_pose[1], 0.0, 0.0], dtype=float)
-    x = np.zeros((len(zmp_ref) + 1, 4), dtype=float)
-    y = np.zeros((len(zmp_ref) + 1, 4), dtype=float)
-    x[0] = x0
-    y[0] = y0
+    x_k = np.array([0.0, com_initial_pose[0], 0.0, 0.0], dtype=float)
+    y_k = np.array([0.0, com_initial_pose[1], 0.0, 0.0], dtype=float)
 
     sleep(0.5)
 
@@ -111,11 +104,11 @@ if __name__ == "__main__":
         # Get zmp ref horizon
         zmp_ref_horizon = zmp_padded[k + 1 : k + ctrler_params.n_preview_steps]
 
-        u[k], x[k + 1], y[k + 1] = update_control(
-            ctrler_mat, zmp_ref[k], zmp_ref_horizon, x[k], y[k]
+        _, x_k, y_k = update_control(
+            ctrler_mat, zmp_ref[k], zmp_ref_horizon, x_k.copy(), y_k.copy()
         )
 
-        com_target = np.array([x[k, 1], y[k, 1], lf_initial_pose[2] + ctrler_params.zc])
+        com_target = np.array([x_k[1], y_k[1], lf_initial_pose[2] + ctrler_params.zc])
 
         # Alternate between feet
         if phases[k] < 0.0:
