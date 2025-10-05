@@ -38,9 +38,9 @@ purpose.
 
 The CoM motion is modeled by the discrete-time linearized dynamics of the inverted pendulum:
 
-\[
+$$\[
 \ddot{x}_c = \frac{g}{z_c} (x_c - x_z)
-\]
+\]$$
 
 where \( x_z \) denotes the ZMP, \( x_c \) the CoM projection, and \( z_c \) the constant CoM height.
 
