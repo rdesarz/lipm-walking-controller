@@ -81,8 +81,6 @@ if __name__ == "__main__":
     x_k = np.array([0.0, com_initial_pose[0], 0.0, 0.0], dtype=float)
     y_k = np.array([0.0, com_initial_pose[1], 0.0, 0.0], dtype=float)
 
-    sleep(0.5)
-
     # Simulate
     ik_sol_params = InvKinSolverParams(
         fixed_foot_frame=talos.right_foot_id,
