@@ -119,15 +119,15 @@ if __name__ == "__main__":
 
         # Alternate between feet
         if phases[k] < 0.0:
-            ctrler_params.fixed_foot_frame = talos.right_foot_id
-            ctrler_params.moving_foot_frame = talos.left_foot_id
+            ik_sol_params.fixed_foot_frame = talos.right_foot_id
+            ik_sol_params.moving_foot_frame = talos.left_foot_id
 
             oMf_lf = pin.SE3(oMf_lf0.rotation, lf_path[k])
             q_new, dq = solve_inverse_kinematics(q, com_target, oMf_lf, ik_sol_params)
             q = q_new
         else:
-            ctrler_params.fixed_foot_frame = talos.left_foot_id
-            ctrler_params.moving_foot_frame = talos.right_foot_id
+            ik_sol_params.fixed_foot_frame = talos.left_foot_id
+            ik_sol_params.moving_foot_frame = talos.right_foot_id
 
             oMf_rf = pin.SE3(oMf_rf0.rotation, rf_path[k])
             q_new, dq = solve_inverse_kinematics(q, com_target, oMf_rf, ik_sol_params)
