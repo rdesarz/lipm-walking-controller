@@ -92,7 +92,7 @@ python examples/example_1_lipm_preview_control.py
 
 Linear forward motion with sinusoidal vertical swing.
 
-<img src="img/foot_motion.png" width="48">
+<img src="img/foot_motion.png" width="50%">
 
 ```bash
 python examples/example_2_feet_motion.py
