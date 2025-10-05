@@ -47,11 +47,12 @@ class PreviewControllerMatrices:
 @dataclass
 class PreviewControllerParams:
     zc: float  # Height of the COM
-    g: float # Gravity
-    Qe: np.ndarray # Cost on the integral error of the ZMP reference
-    Qx: np.ndarray # Cost on the state vector variation.
-    R: np.ndarray # Cost on the input command u(t) magnitude
-    n_preview_steps: int # Number of steps to preview on the ZMP reference
+    g: float  # Gravity
+    Qe: np.ndarray  # Cost on the integral error of the ZMP reference
+    Qx: np.ndarray  # Cost on the state vector variation.
+    R: np.ndarray  # Cost on the input command u(t) magnitude
+    n_preview_steps: int  # Number of steps to preview on the ZMP reference
+
 
 def compute_preview_control_matrices(params: PreviewControllerParams, dt: float):
     # Discrete cart-table model with jerk input
