@@ -14,7 +14,7 @@ from lipm_walking_controller.controller import (
 )
 
 from lipm_walking_controller.foot import compute_feet_path_and_poses, get_active_polygon
-from lipm_walking_controller.inverse_kinematic import qp_inverse_kinematics, QPParams
+from lipm_walking_controller.inverse_kinematic import solve_inverse_kinematics, InvKinSolverParams
 from lipm_walking_controller.model import Talos
 
 if __name__ == "__main__":
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     sleep(0.5)
 
     # Simulate
-    ctrler_params = QPParams(
+    ik_sol_params = InvKinSolverParams(
         fixed_foot_frame=talos.right_foot_id,
         moving_foot_frame=talos.left_foot_id,
         torso_frame=talos.torso_id,
@@ -123,14 +123,14 @@ if __name__ == "__main__":
             ctrler_params.moving_foot_frame = talos.left_foot_id
 
             oMf_lf = pin.SE3(oMf_lf0.rotation, lf_path[k])
-            q_new, dq = qp_inverse_kinematics(q, com_target, oMf_lf, ctrler_params)
+            q_new, dq = solve_inverse_kinematics(q, com_target, oMf_lf, ik_sol_params)
             q = q_new
         else:
             ctrler_params.fixed_foot_frame = talos.left_foot_id
             ctrler_params.moving_foot_frame = talos.right_foot_id
 
             oMf_rf = pin.SE3(oMf_rf0.rotation, rf_path[k])
-            q_new, dq = qp_inverse_kinematics(q, com_target, oMf_rf, ctrler_params)
+            q_new, dq = solve_inverse_kinematics(q, com_target, oMf_rf, ik_sol_params)
             q = q_new
 
         pin.forwardKinematics(talos.model, talos.data, q)
