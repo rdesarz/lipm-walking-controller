@@ -1,5 +1,3 @@
-import math
-
 import numpy as np
 from matplotlib import pyplot as plt
 from shapely import Polygon
@@ -8,6 +6,7 @@ from lipm_walking_controller.controller import (
     compute_zmp_ref,
     compute_preview_control_matrices,
     update_control,
+    PreviewControllerParams,
 )
 
 from lipm_walking_controller.foot import get_active_polygon, compute_feet_path_and_poses
@@ -15,18 +14,9 @@ from lipm_walking_controller.foot import get_active_polygon, compute_feet_path_a
 if __name__ == "__main__":
     # Parameters
     dt = 0.005  # Delta of time of the model simulation
-    g = 9.81  # Gravity
-    zc = 0.814  # Height of the COM
-    w = math.sqrt(g / zc)
 
     # Preview controller parameters
     t_preview = 1.6  # Time horizon used for the preview controller
-    n_preview_steps = int(round(t_preview / dt))
-    Qe = 1.0  # Cost on the integral error of the ZMP reference
-    Qx = np.zeros(
-        (3, 3)
-    )  # Cost on the state vector variation. Zero by default as we don't want to penalize strong variation.
-    R = 1e-6  # Cost on the input command u(t)
 
     # ZMP reference parameters
     t_ss = 1.0  # Single support phase time window
@@ -62,12 +52,22 @@ if __name__ == "__main__":
     zmp_ref = compute_zmp_ref(t, com_initial_pose, steps_pose, t_ss, t_ds)
 
     # Initialize controller
-    ctrler_mat = compute_preview_control_matrices(dt, zc, g, Qe, Qx, R, n_preview_steps)
+    ctrler_params = PreviewControllerParams(
+        zc=0.89,
+        g=9.81,
+        Qe=1.0,
+        Qx=np.zeros((3, 3)),
+        R=1e-6,
+        n_preview_steps=int(round(t_preview / dt)),
+    )
+    ctrler_mat = compute_preview_control_matrices(ctrler_params, dt)
 
     T = len(t)
     u = np.zeros((T, 2))
 
-    zmp_padded = np.vstack([zmp_ref, np.repeat(zmp_ref[-1][None, :], n_preview_steps, axis=0)])
+    zmp_padded = np.vstack(
+        [zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)]
+    )
 
     x0 = np.array([0.0, com_initial_pose[0], 0.0, 0.0], dtype=float)
     y0 = np.array([0.0, com_initial_pose[1], 0.0, 0.0], dtype=float)
@@ -106,7 +106,10 @@ if __name__ == "__main__":
     axes[1, 1].set_title("ZMP reference vs COM position on Y-axis")
 
     axes[1, 0].plot(
-        np.arange(1, n_preview_steps) * dt, ctrler_mat.Gd, marker=".", label="Preview gains [y]"
+        np.arange(1, ctrler_params.n_preview_steps) * dt,
+        ctrler_mat.Gd,
+        marker=".",
+        label="Preview gains [y]",
     )
     axes[1, 0].grid(True)
     axes[1, 0].legend()
@@ -154,7 +157,7 @@ if __name__ == "__main__":
             y[k, 1] += (Fy / m) * dt
 
         # Get zmp ref horizon
-        zmp_ref_horizon = zmp_padded[k + 1 : k + n_preview_steps]
+        zmp_ref_horizon = zmp_padded[k + 1 : k + ctrler_params.n_preview_steps]
 
         u[k], x[k + 1], y[k + 1] = update_control(
             ctrler_mat, zmp_ref[k], zmp_ref_horizon, x[k], y[k]
