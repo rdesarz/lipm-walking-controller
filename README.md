@@ -38,19 +38,19 @@ purpose.
 
 The CoM motion is modeled by the discrete-time linearized dynamics of the inverted pendulum:
 
-$$\[
+$$
 \ddot{x}_c = \frac{g}{z_c} (x_c - x_z)
-\]$$
+$$
 
-where \( x_z \) denotes the ZMP, \( x_c \) the CoM projection, and \( z_c \) the constant CoM height.
+where $x_z$ denotes the ZMP, $x_c$ the CoM projection, and $z_c$ the constant CoM height.
 
 ### Preview Control
 
 The control input minimizes a quadratic cost over a finite horizon:
 
-\[
+$$
 J = \sum_{k=0}^{\infty} \left( Q_e e_k^2 + x_k^T Q_x x_k + R \Delta u_k^2 \right)
-\]
+$$
 
 yielding a feedback + integral + preview law.  
 The resulting controller anticipates future ZMP references, ensuring stable walking trajectories.
