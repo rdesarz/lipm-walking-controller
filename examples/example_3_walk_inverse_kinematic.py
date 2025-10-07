@@ -120,13 +120,7 @@ if __name__ == "__main__":
         pin.updateFramePlacements(talos.model, talos.data)
 
         # Uncomment to display the path of the CoM in the viewer
-        # com = pin.centerOfMass(talos.model, talos.data, q)
-        # n = viz.viewer[f"world/com_traj/pt_{k:05d}"]
-        # n.set_object(
-        #     meshcat.geometry.Sphere(0.01),
-        #     meshcat.geometry.MeshLambertMaterial(color=0xFF0000),
-        # )
-        # n.set_transform(tf.translation_matrix(com))
+        viz.display_point(pin.centerOfMass(talos.model, talos.data, q), k)
 
         # Uncomment to have the camera follow the robot
         viz.point_camera_at_robot(robot_model=talos, camera_offset=np.array([2.0, 1.0, 1.0]))
