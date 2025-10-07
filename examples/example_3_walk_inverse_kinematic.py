@@ -120,10 +120,10 @@ if __name__ == "__main__":
         pin.updateFramePlacements(talos.model, talos.data)
 
         # Uncomment to display the path of the CoM in the viewer
-        viz.display_point(pin.centerOfMass(talos.model, talos.data, q), k)
+        # viz.display_point(pin.centerOfMass(talos.model, talos.data, q), k)
 
-        # Uncomment to have the camera follow the robot
-        viz.point_camera_at_robot(robot_model=talos, camera_offset=np.array([2.0, 1.0, 1.0]))
+        # Uncomment to have the camera follow the robot. Requires master branch of meshcat.
+        # viz.point_camera_at_robot(robot_model=talos, camera_offset=np.array([2.0, 1.0, 1.0]))
 
         # Update the model visualization
         viz.update_display(q)
