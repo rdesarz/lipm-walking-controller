@@ -2,6 +2,7 @@ from time import sleep, clock_gettime
 import meshcat
 import numpy as np
 import pinocchio as pin
+from numpy.linalg import norm
 from pinocchio.visualize import MeshcatVisualizer
 import meshcat.transformations as tf
 
@@ -24,8 +25,8 @@ if __name__ == "__main__":
     t_preview = 1.6  # Time horizon used for the preview controller
 
     # ZMP reference parameters
-    t_ss = 1.0  # Single support phase time window
-    t_ds = 0.2  # Double support phase time window
+    t_ss = 0.6  # Single support phase time window
+    t_ds = 0.1  # Double support phase time window
     n_steps = 25
     l_stride = 0.3
     max_height_foot = 0.05
@@ -48,7 +49,6 @@ if __name__ == "__main__":
     viz = MeshcatVisualizer(talos.model, talos.geom, talos.vis)
     viz.initViewer(open=True)
     viz.loadViewerModel()
-    viz.viewer["/Cameras/default/rotated/<object>"].set_property("position", [2.5, 2.0, -2.0])
 
     oMf_rf0 = talos.data.oMf[talos.right_foot_id].copy()
     oMf_lf0 = talos.data.oMf[talos.left_foot_id].copy()
@@ -125,14 +125,20 @@ if __name__ == "__main__":
         pin.forwardKinematics(talos.model, talos.data, q)
         pin.updateFramePlacements(talos.model, talos.data)
 
-        # Display the path of the CoM in the viewer
-        com = pin.centerOfMass(talos.model, talos.data, q)
-        n = viz.viewer[f"world/com_traj/pt_{k:05d}"]
-        n.set_object(
-            meshcat.geometry.Sphere(0.01),
-            meshcat.geometry.MeshLambertMaterial(color=0xFF0000),
-        )
-        n.set_transform(tf.translation_matrix(com))
+        # Uncomment to display the path of the CoM in the viewer
+        # com = pin.centerOfMass(talos.model, talos.data, q)
+        # n = viz.viewer[f"world/com_traj/pt_{k:05d}"]
+        # n.set_object(
+        #     meshcat.geometry.Sphere(0.01),
+        #     meshcat.geometry.MeshLambertMaterial(color=0xFF0000),
+        # )
+        # n.set_transform(tf.translation_matrix(com))
+
+        # Uncomment to have the camera follow the robot
+        target = talos.data.oMf[talos.torso_id].translation
+        target[1] = 0.0
+        viz.setCameraTarget(target)  # ndarray shape (3,)
+        viz.setCameraPosition(target + np.array([2.0, 1.0, 1.0]))  # optional
 
         # Update the model visualization
         if viz:
