@@ -94,11 +94,11 @@ python examples/example_1_lipm_preview_control.py
 
 Linear forward motion with sinusoidal vertical swing.
 
-<img src="img/foot_motion.png">
-
 ```bash
 python examples/example_2_feet_motion.py
 ```
+
+<img src="img/foot_motion.png">
 
 ### Example 3: Preview Control Demonstration
 
@@ -108,6 +108,8 @@ This produces a full kinematic walking sequence without dynamic simulation.
 ```bash
 python examples/example_3_walk_inverse_kinematic.py
 ```
+
+![](img/inverse_kinematic.gif)
 
 ## Future Work
 
