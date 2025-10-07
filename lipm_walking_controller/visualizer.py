@@ -40,3 +40,11 @@ class Visualizer:
         target[1] = 0.0
         self.viz.setCameraTarget(target)
         self.viz.setCameraPosition(target + camera_offset)
+
+    def display_point(self, point, id):
+        n = self.viz.viewer[f"world/com_traj/pt_{id:05d}"]
+        n.set_object(
+            meshcat.geometry.Sphere(0.01),
+            meshcat.geometry.MeshLambertMaterial(color=0xFF0000),
+        )
+        n.set_transform(tf.translation_matrix(point))
