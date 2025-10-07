@@ -1,10 +1,6 @@
 from time import sleep, clock_gettime
-import meshcat
 import numpy as np
 import pinocchio as pin
-from numpy.linalg import norm
-from pinocchio.visualize import MeshcatVisualizer
-import meshcat.transformations as tf
 
 from lipm_walking_controller.controller import (
     compute_preview_control_matrices,
@@ -16,6 +12,7 @@ from lipm_walking_controller.controller import (
 from lipm_walking_controller.foot import compute_feet_path_and_poses
 from lipm_walking_controller.inverse_kinematic import solve_inverse_kinematics, InvKinSolverParams
 from lipm_walking_controller.model import Talos
+from lipm_walking_controller.visualizer import Visualizer
 
 if __name__ == "__main__":
     # General parameters
@@ -48,25 +45,7 @@ if __name__ == "__main__":
     oMf_lf0 = talos.data.oMf[talos.left_foot_id].copy()
 
     # Initialize visualizer
-    viz = MeshcatVisualizer(talos.model, talos.geom, talos.vis)
-    viz.initViewer(open=True)
-    viz.loadViewerModel()
-
-    # remove grid
-    viz.viewer["/Grid"].set_property("visible", False)
-
-    viz.viewer["/Background"].set_property("top_color", [0.10, 0.10, 0.10])
-    viz.viewer["/Background"].set_property("bottom_color", [0.02, 0.02, 0.02])
-
-    # large, thin box as floor
-    size = np.array([20.0, 20.0, 0.01])  # X,Y size, thickness
-    floor = meshcat.geometry.Box(size)
-    mat = meshcat.geometry.MeshPhongMaterial(color=0x888888, shininess=10.0)
-
-    viz.viewer["scene/ground"].set_object(floor, mat)
-    viz.viewer["scene/ground"].set_transform(
-        tf.translation_matrix([0, 0, oMf_lf0.translation[2] - size[2] / 2])
-    )
+    viz = Visualizer(talos)
 
     lf_initial_pose = oMf_lf0.translation
     rf_initial_pose = oMf_rf0.translation
@@ -150,14 +129,10 @@ if __name__ == "__main__":
         # n.set_transform(tf.translation_matrix(com))
 
         # Uncomment to have the camera follow the robot
-        target = talos.data.oMf[talos.torso_id].translation
-        target[1] = 0.0
-        viz.setCameraTarget(target)  # ndarray shape (3,)
-        viz.setCameraPosition(target + np.array([2.0, 1.0, 1.0]))  # optional
+        viz.point_camera_at_robot(robot_model=talos, camera_offset=np.array([2.0, 1.0, 1.0]))
 
         # Update the model visualization
-        if viz:
-            viz.display(q)
+        viz.update_display(q)
 
         # Compute the remaining time to render in real time the visualization
         stop = clock_gettime(0)
