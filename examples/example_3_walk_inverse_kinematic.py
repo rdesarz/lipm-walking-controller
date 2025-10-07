@@ -44,14 +44,29 @@ if __name__ == "__main__":
     # Initialize the model position
     talos = Talos(path_to_model="~/projects")
     q = talos.set_and_get_default_pose()
+    oMf_rf0 = talos.data.oMf[talos.right_foot_id].copy()
+    oMf_lf0 = talos.data.oMf[talos.left_foot_id].copy()
 
     # Initialize visualizer
     viz = MeshcatVisualizer(talos.model, talos.geom, talos.vis)
     viz.initViewer(open=True)
     viz.loadViewerModel()
 
-    oMf_rf0 = talos.data.oMf[talos.right_foot_id].copy()
-    oMf_lf0 = talos.data.oMf[talos.left_foot_id].copy()
+    # remove grid
+    viz.viewer["/Grid"].set_property("visible", False)
+
+    viz.viewer["/Background"].set_property("top_color", [0.10, 0.10, 0.10])
+    viz.viewer["/Background"].set_property("bottom_color", [0.02, 0.02, 0.02])
+
+    # large, thin box as floor
+    size = np.array([20.0, 20.0, 0.01])  # X,Y size, thickness
+    floor = meshcat.geometry.Box(size)
+    mat = meshcat.geometry.MeshPhongMaterial(color=0x888888, shininess=10.0)
+
+    viz.viewer["scene/ground"].set_object(floor, mat)
+    viz.viewer["scene/ground"].set_transform(
+        tf.translation_matrix([0, 0, oMf_lf0.translation[2] - size[2] / 2])
+    )
 
     lf_initial_pose = oMf_lf0.translation
     rf_initial_pose = oMf_rf0.translation
