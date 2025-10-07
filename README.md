@@ -6,6 +6,8 @@ This repository presents an open-source implementation of the **Linear Inverted 
 generator based on **preview control of the Zero-Moment Point (ZMP)**, following the formulation introduced 
 by _Kajita et al., “Biped Walking Pattern Generation by Using Preview Control of the Zero-Moment Point,” ICRA 2003_.
 
+![](img/inverse_kinematic.gif)
+
 ---
 
 ## Introduction
