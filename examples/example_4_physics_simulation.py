@@ -37,7 +37,18 @@ def track_q_position(robot_id, pin_model, q, name_to_bid, kp=80.0, kd=2.0, fmax=
         )
 
 
-talos = Talos("~/projects")
+def apply_position(q_des, j_to_q_idx):
+    for j_id, q_id in j_to_q_idx.items():
+        pb.setJointMotorControl2(
+            robot,
+            j_id,
+            pb.POSITION_CONTROL,
+            targetPosition=q_des[q_id],
+            positionGain=0.4,
+            velocityGain=1.0,
+            force=200,
+        )
+
 
 if __name__ == "__main__":
     dt = 1.0 / 240.0
@@ -50,30 +61,20 @@ if __name__ == "__main__":
     PKG_PARENT = os.path.expanduser(os.environ.get("PKG_PARENT", "~/projects"))
     URDF = os.path.join(PKG_PARENT, "talos_data/urdf/talos_full.urdf")
     robot = pb.loadURDF(
-        URDF, [0, 0, 1.5], [0, 0, 0, 1], useFixedBase=False, flags=pb.URDF_MERGE_FIXED_LINKS
+        URDF, [0, 0, 1.1], [0, 0, 0, 1], useFixedBase=False, flags=pb.URDF_MERGE_FIXED_LINKS
     )
 
-    joint_ids = []
+    talos = Talos(path_to_model="~/projects", reduced=False)
+
+    map_joint_idx_to_q_idx = {}
     for j in range(pb.getNumJoints(robot)):
-        joint_ids.append(j)
+        joint_name = pb.getJointInfo(robot, j)[1]
+        map_joint_idx_to_q_idx[j] = talos.get_joint_id(joint_name)
 
-    def apply_position(q_des, joint_ids):
-        for qd, jid in zip(q_des[7:], joint_ids):
-            pb.setJointMotorControl2(
-                robot,
-                jid,
-                pb.POSITION_CONTROL,
-                targetPosition=qd,
-                positionGain=0.4,
-                velocityGain=1.0,
-                force=200,
-            )
-
-    talos = Talos(path_to_model="~/projects", simplify=False)
     q = talos.set_and_get_default_pose()
 
     k = 0
     while True:
-        apply_position(q_des=q, joint_ids=joint_ids)
+        apply_position(q_des=q, j_to_q_idx=map_joint_idx_to_q_idx)
         pb.stepSimulation()
         k += 1

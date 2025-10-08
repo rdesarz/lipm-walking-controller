@@ -4,7 +4,7 @@ import pinocchio as pin
 
 def print_joints(model):
     for j_id, j_name in enumerate(model.names):
-        print(j_id, j_name, model.joints[j_id].shortname())
+        print(j_id, j_name, model.joints[j_id].shortname(), model.joints[j_id].nq)
 
 
 def print_frames(model):
@@ -19,7 +19,7 @@ def set_joint(q, model, joint_name, val):
 
 
 class Talos:
-    def __init__(self, path_to_model: str, simplify=True):
+    def __init__(self, path_to_model: str, reduced=True):
         # Load full model
         PKG_PARENT = os.path.expanduser(os.environ.get("PKG_PARENT", path_to_model))
         URDF = os.path.join(PKG_PARENT, "talos_data/urdf/talos_full.urdf")
@@ -45,7 +45,8 @@ class Talos:
         set_joint(q, full_model, "arm_left_4_joint", -1.2)
 
         # We build a reduced model by locking the specificied joints if needed
-        if simplify:
+        self.reduced = reduced
+        if self.reduced:
             joints_to_lock = list(range(14, 48))
             self.model, self.geom = pin.buildReducedModel(
                 full_model, full_col_model, joints_to_lock, q
@@ -66,6 +67,12 @@ class Talos:
         # Initialize reduced model
         q = pin.neutral(self.model)
 
+        if not self.reduced:
+            set_joint(q, self.model, "leg_left_4_joint", 0.0)
+            set_joint(q, self.model, "leg_right_4_joint", 0.0)
+            set_joint(q, self.model, "arm_right_4_joint", -1.2)
+            set_joint(q, self.model, "arm_left_4_joint", -1.2)
+
         # Initialize left leg position
         set_joint(q, self.model, "leg_left_1_joint", 0.0)
         set_joint(q, self.model, "leg_left_2_joint", 0.0)
@@ -85,3 +92,8 @@ class Talos:
         pin.updateFramePlacements(self.model, self.data)
 
         return q
+
+    def get_joint_id(self, name):
+        jid = self.model.getJointId(name)
+
+        return self.model.joints[jid].idx_q
