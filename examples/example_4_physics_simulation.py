@@ -22,10 +22,22 @@ def apply_position(q_des, j_to_q_idx):
             j_id,
             pb.POSITION_CONTROL,
             targetPosition=q_des[q_id],
-            positionGain=0.4,
+            positionGain=0.6,
             velocityGain=1.0,
             force=200,
         )
+
+
+def get_q_from_pybullet(robot, model, map_joint_idx_to_q_idx):
+    q = np.zeros(model.nq)
+    base_pos, base_quat = pb.getBasePositionAndOrientation(robot)
+    q[:7] = np.concatenate([base_pos, base_quat])  # base position + orientation
+
+    for j_id, q_id in map_joint_idx_to_q_idx.items():
+        if q_id < 0:  # skip fixed joints
+            continue
+        q[q_id] = pb.getJointState(robot, j_id)[0]
+    return q
 
 
 if __name__ == "__main__":
@@ -59,7 +71,7 @@ if __name__ == "__main__":
     PKG_PARENT = os.path.expanduser(os.environ.get("PKG_PARENT", "~/projects"))
     URDF = os.path.join(PKG_PARENT, "talos_data/urdf/talos_full.urdf")
     robot = pb.loadURDF(
-        URDF, [0, 0, 1.1], [0, 0, 0, 1], useFixedBase=False, flags=pb.URDF_MERGE_FIXED_LINKS
+        URDF, [0, 0, 1.1], [0, 0, 0, 1], useFixedBase=True, flags=pb.URDF_MERGE_FIXED_LINKS
     )
 
     talos = Talos(path_to_model="~/projects", reduced=False)
@@ -71,9 +83,11 @@ if __name__ == "__main__":
 
     q = talos.set_and_get_default_pose()
 
+    com_initial_pose = pin.centerOfMass(talos.model, talos.data, q)
+
     k = 0
-    x_k = np.array([0.0, 0.0, 0.0, 0.0], dtype=float)
-    y_k = np.array([0.0, 0.0, 0.0, 0.0], dtype=float)
+    x_k = np.array([0.0, com_initial_pose[0], 0.0, 0.0], dtype=float)
+    y_k = np.array([0.0, com_initial_pose[1], 0.0, 0.0], dtype=float)
 
     ik_sol_params = InvKinSolverParams(
         fixed_foot_frame=talos.right_foot_id,
@@ -90,8 +104,13 @@ if __name__ == "__main__":
     )
 
     oMf_rf0 = talos.data.oMf[talos.right_foot_id].copy()
+    oMf_lf0 = talos.data.oMf[talos.left_foot_id].copy()
 
     while True:
+        q_pybullet = get_q_from_pybullet(robot, talos.model, map_joint_idx_to_q_idx)
+
+        q[7:] = q_pybullet[7:]
+
         # Get zmp ref horizon
         zmp_ref_horizon = np.zeros((ctrler_params.n_preview_steps - 1, 2))
 
@@ -100,13 +119,14 @@ if __name__ == "__main__":
         )
 
         # The CoM target is meant to follow the computed x and y and stay at constant height zc from the feet
-        com_target = np.array([x_k[1], y_k[1], ctrler_params.zc])
+        com_target = np.array([x_k[1], y_k[1], oMf_rf0.translation[2] + ctrler_params.zc])
 
         # Stabilize at the position
         ik_sol_params.fixed_foot_frame = talos.left_foot_id
         ik_sol_params.moving_foot_frame = talos.right_foot_id
 
-        q_new, dq = solve_inverse_kinematics(q, com_target, oMf_rf0, ik_sol_params)
+        q_des, dq = solve_inverse_kinematics(q, com_target, oMf_lf0, oMf_rf0, ik_sol_params)
+        q = q_des
 
         apply_position(q_des=q, j_to_q_idx=map_joint_idx_to_q_idx)
         pb.stepSimulation()
