@@ -22,8 +22,8 @@ if __name__ == "__main__":
     t_preview = 1.6  # Time horizon used for the preview controller
 
     # ZMP reference parameters
-    t_ss = 0.6  # Single support phase time window
-    t_ds = 0.1  # Double support phase time window
+    t_ss = 2.0  # Single support phase time window
+    t_ds = 1.0  # Double support phase time window
     n_steps = 25
     l_stride = 0.3
     max_height_foot = 0.05
@@ -39,17 +39,18 @@ if __name__ == "__main__":
     ctrler_mat = compute_preview_control_matrices(ctrler_params, dt)
 
     # Initialize the model position
-    talos = Talos(path_to_model="~/projects")
+    talos = Talos(path_to_model="~/projects", reduced=False)
     q = talos.set_and_get_default_pose()
-    oMf_rf0 = talos.data.oMf[talos.right_foot_id].copy()
-    oMf_lf0 = talos.data.oMf[talos.left_foot_id].copy()
+    oMf_rf_fixed = talos.data.oMf[talos.right_foot_id].copy()
+    oMf_lf_fixed = talos.data.oMf[talos.left_foot_id].copy()
 
     # Initialize visualizer
     viz = Visualizer(talos)
 
-    lf_initial_pose = oMf_lf0.translation
-    rf_initial_pose = oMf_rf0.translation
+    lf_initial_pose = oMf_lf_fixed.translation
+    rf_initial_pose = oMf_rf_fixed.translation
     com_initial_pose = pin.centerOfMass(talos.model, talos.data, q)
+    oMf_torso = talos.data.oMf[talos.torso_id].copy()
 
     # Build ZMP reference to track
     t, lf_path, rf_path, steps_pose, phases = compute_feet_path_and_poses(
@@ -81,8 +82,7 @@ if __name__ == "__main__":
         data=talos.data,
         w_torso=10.0,
         w_com=10.0,
-        w_mf=10.0,
-        w_ff=1000.0,
+        w_mf=1000.0,
         mu=1e-5,
         dt=dt,
     )
@@ -105,15 +105,32 @@ if __name__ == "__main__":
             ik_sol_params.fixed_foot_frame = talos.right_foot_id
             ik_sol_params.moving_foot_frame = talos.left_foot_id
 
-            oMf_lf = pin.SE3(oMf_lf0.rotation, lf_path[k])
-            q_new, dq = solve_inverse_kinematics(q, com_target, oMf_lf, ik_sol_params)
+            oMf_lf = pin.SE3(oMf_lf_fixed.rotation, lf_path[k])
+            oMf_lf_fixed = oMf_lf
+            q_new, dq = solve_inverse_kinematics(
+                q,
+                com_target,
+                oMf_fixed_foot=oMf_rf_fixed,
+                oMf_moving_foot=oMf_lf,
+                oMf_torso=oMf_torso,
+                params=ik_sol_params,
+            )
             q = q_new
         else:
             ik_sol_params.fixed_foot_frame = talos.left_foot_id
             ik_sol_params.moving_foot_frame = talos.right_foot_id
 
-            oMf_rf = pin.SE3(oMf_rf0.rotation, rf_path[k])
-            q_new, dq = solve_inverse_kinematics(q, com_target, oMf_rf, ik_sol_params)
+            oMf_rf = pin.SE3(oMf_rf_fixed.rotation, rf_path[k])
+            oMf_rf_fixed = oMf_rf
+            q_new, dq = solve_inverse_kinematics(
+                q,
+                com_target,
+                oMf_torso=oMf_torso,
+                oMf_fixed_foot=oMf_lf_fixed,
+                oMf_moving_foot=oMf_rf,
+                params=ik_sol_params,
+            )
+
             q = q_new
 
         pin.forwardKinematics(talos.model, talos.data, q)

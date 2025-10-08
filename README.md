@@ -6,7 +6,12 @@ This repository presents an open-source implementation of the **Linear Inverted 
 generator based on **preview control of the Zero-Moment Point (ZMP)**, following the formulation introduced 
 by _Kajita et al., “Biped Walking Pattern Generation by Using Preview Control of the Zero-Moment Point,” ICRA 2003_.
 
-![](img/inverse_kinematic.gif)
+The animation below shows the controller in action in a Pybullet simulation:
+
+<p align="center">
+  <img src="img/physics_simulation.gif" />
+</p>
+
 
 ---
 
@@ -90,7 +95,7 @@ python examples/example_1_lipm_preview_control.py
 
 ![](img/preview_control.gif)
 
-### Example 2: Preview Control Demonstration
+### Example 2: Swing foot trajectory generation 
 
 Linear forward motion with sinusoidal vertical swing.
 
@@ -100,7 +105,7 @@ python examples/example_2_feet_motion.py
 
 <img src="img/foot_motion.png">
 
-### Example 3: Preview Control Demonstration
+### Example 3: Inverse kinematics
 
 Inverse kinematics are computed to track CoM and foot trajectories using the Talos model.
 This produces a full kinematic walking sequence without dynamic simulation.
@@ -109,13 +114,28 @@ This produces a full kinematic walking sequence without dynamic simulation.
 python examples/example_3_walk_inverse_kinematic.py
 ```
 
-![](img/inverse_kinematic.gif)
+<p align="center">
+  <img src="img/inverse_kinematic.gif" />
+</p>
+
+### Example 4: Integration in Pybullet
+
+In this example we integrate the controller and inverse kinematic modules inside Pybullet to test the walking pattern in
+a simulated environment:
+
+```bash
+python examples/example_4_physics_simulation.py
+```
+
+<p align="center">
+  <img src="img/physics_simulation.gif" />
+</p>
+
 
 ## Future Work
 
 The next steps aim at extending this framework toward dynamically consistent humanoid walking:
 
-* Integration with PyBullet for physics-based evaluation
 * Disturbance rejection analysis under external perturbations
 * Development of a footstep planner for omnidirectional locomotion 
 * Integration of Model Predictive Control (MPC) for real-time trajectory optimization
