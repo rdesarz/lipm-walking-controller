@@ -2,7 +2,7 @@ import pybullet as pb
 import pybullet_data
 import os
 
-from lipm_walking_controller.model import Talos, print_joints
+from lipm_walking_controller.model import Talos
 
 
 def track_q_position(robot_id, pin_model, q, name_to_bid, kp=80.0, kd=2.0, fmax=200.0):
