@@ -1,10 +1,8 @@
-import pinocchio as pin
-import numpy as np
 import pybullet as pb
 import pybullet_data
 import os
 
-from lipm_walking_controller.model import Talos
+from lipm_walking_controller.model import Talos, print_joints
 
 
 def track_q_position(robot_id, pin_model, q, name_to_bid, kp=80.0, kd=2.0, fmax=200.0):
@@ -60,7 +58,7 @@ if __name__ == "__main__":
         joint_ids.append(j)
 
     def apply_position(q_des, joint_ids):
-        for qd, jid in zip(q_des, joint_ids):
+        for qd, jid in zip(q_des[7:], joint_ids):
             pb.setJointMotorControl2(
                 robot,
                 jid,
@@ -73,7 +71,6 @@ if __name__ == "__main__":
 
     talos = Talos(path_to_model="~/projects", simplify=False)
     q = talos.set_and_get_default_pose()
-    print(q)
 
     k = 0
     while True:
