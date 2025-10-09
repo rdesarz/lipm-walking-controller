@@ -132,7 +132,7 @@ if __name__ == "__main__":
     max_height_foot = 0.05
 
     ctrler_params = PreviewControllerParams(
-        zc=0.89,
+        zc=0.85,
         g=9.81,
         Qe=1.0,
         Qx=np.zeros((3, 3)),
@@ -171,7 +171,7 @@ if __name__ == "__main__":
         torso_frame=talos.torso_id,
         model=talos.model,
         data=talos.data,
-        w_torso=0.0,
+        w_torso=100.0,
         w_com=0.0,
         w_mf=10.0,
         w_ff=10.0,
@@ -190,7 +190,7 @@ if __name__ == "__main__":
 
     # set initial CoM target centered between feet at height zc
     feet_mid = 0.5 * (oMf_lf_tgt.translation + oMf_rf_tgt.translation)
-    com_target = np.array([feet_mid[0], feet_mid[1], 0.0 + ctrler_params.zc])
+    com_target = np.array([feet_mid[0], feet_mid[1], ctrler_params.zc])
 
     # one IK solve to match: left foot fixed = oMf_lf_tgt, right foot = oMf_rf_tgt, CoM = com_target
     ik_sol_params.fixed_foot_frame = talos.left_foot_id
@@ -207,7 +207,7 @@ if __name__ == "__main__":
 
     pb.setGravity(0, 0, -9.81)
     while True:
-        apply_position(q, map_joint_idx_to_q_idx)
+        # apply_position(q, map_joint_idx_to_q_idx)
 
         # q_pybullet = get_q_from_pybullet(robot, talos.model, map_joint_idx_to_q_idx)
         #
@@ -227,9 +227,9 @@ if __name__ == "__main__":
         # ik_sol_params.fixed_foot_frame = talos.left_foot_id
         # ik_sol_params.moving_foot_frame = talos.right_foot_id
         #
-        # q_des, dq = solve_inverse_kinematics(q, com_target, oMf_lf0, oMf_rf0, ik_sol_params)
+        # q_des, dq = solve_inverse_kinematics(q, com_target, oMf_lf_tgt, oMf_rf_tgt, ik_sol_params)
         # q = q_des
         #
         # apply_position(q_des=q, j_to_q_idx=map_joint_idx_to_q_idx)
-        pb.stepSimulation()
+        # pb.stepSimulation()
         k += 1
