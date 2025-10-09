@@ -22,10 +22,16 @@ def apply_position(q_des, j_to_q_idx):
             j_id,
             pb.POSITION_CONTROL,
             targetPosition=q_des[q_id],
+            targetVelocity=0.0,
             positionGain=0.6,
             velocityGain=1.0,
             force=200,
         )
+
+
+def reset_position(q_des, j_to_q_idx):
+    for j_id, q_id in j_to_q_idx.items():
+        pb.resetJointState(robot, j_id, q_des[q_id])
 
 
 def get_q_from_pybullet(robot, model, map_joint_idx_to_q_idx):
@@ -71,7 +77,7 @@ if __name__ == "__main__":
     PKG_PARENT = os.path.expanduser(os.environ.get("PKG_PARENT", "~/projects"))
     URDF = os.path.join(PKG_PARENT, "talos_data/urdf/talos_full.urdf")
     robot = pb.loadURDF(
-        URDF, [0, 0, 1.1], [0, 0, 0, 1], useFixedBase=True, flags=pb.URDF_MERGE_FIXED_LINKS
+        URDF, [0, 0, 1.1], [0, 0, 0, 1], useFixedBase=False, flags=pb.URDF_MERGE_FIXED_LINKS
     )
 
     talos = Talos(path_to_model="~/projects", reduced=False)
@@ -90,8 +96,8 @@ if __name__ == "__main__":
     y_k = np.array([0.0, com_initial_pose[1], 0.0, 0.0], dtype=float)
 
     ik_sol_params = InvKinSolverParams(
-        fixed_foot_frame=talos.right_foot_id,
-        moving_foot_frame=talos.left_foot_id,
+        fixed_foot_frame=talos.left_foot_id,
+        moving_foot_frame=talos.right_foot_id,
         torso_frame=talos.torso_id,
         model=talos.model,
         data=talos.data,
