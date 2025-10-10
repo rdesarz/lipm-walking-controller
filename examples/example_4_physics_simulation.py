@@ -132,7 +132,7 @@ if __name__ == "__main__":
     max_height_foot = 0.05
 
     ctrler_params = PreviewControllerParams(
-        zc=0.85,
+        zc=0.80,
         g=9.81,
         Qe=1.0,
         Qx=np.zeros((3, 3)),
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     PKG_PARENT = os.path.expanduser(os.environ.get("PKG_PARENT", "~/projects"))
     URDF = os.path.join(PKG_PARENT, "talos_data/urdf/talos_full.urdf")
     robot = pb.loadURDF(
-        URDF, [0, 0, 0.0], [0, 0, 0, 1], useFixedBase=False, flags=pb.URDF_MERGE_FIXED_LINKS
+        URDF, [0, 0, 0], [0, 0, 0, 1], useFixedBase=False, flags=pb.URDF_MERGE_FIXED_LINKS
     )
 
     talos = Talos(path_to_model="~/projects", reduced=False)
@@ -171,10 +171,10 @@ if __name__ == "__main__":
         torso_frame=talos.torso_id,
         model=talos.model,
         data=talos.data,
-        w_torso=100.0,
-        w_com=0.0,
+        w_torso=10.0,
+        w_com=10.0,
         w_mf=10.0,
-        w_ff=10.0,
+        w_ff=1000.0,
         mu=1e-5,
         dt=dt,
     )
@@ -198,6 +198,9 @@ if __name__ == "__main__":
     q_des, dq = solve_inverse_kinematics(q, com_target, oMf_lf_tgt, oMf_rf_tgt, ik_sol_params)
     q = q_des
 
+    pin.forwardKinematics(talos.model, talos.data, q)
+    pin.updateFramePlacements(talos.model, talos.data)
+
     # hard reset PyBullet once, then enable controllers
     reset_pybullet_from_q(robot, q, map_joint_idx_to_q_idx)
     pb.setGravity(0, 0, 0.0)
@@ -207,7 +210,7 @@ if __name__ == "__main__":
 
     pb.setGravity(0, 0, -9.81)
     while True:
-        # apply_position(q, map_joint_idx_to_q_idx)
+        apply_position(q, map_joint_idx_to_q_idx)
 
         # q_pybullet = get_q_from_pybullet(robot, talos.model, map_joint_idx_to_q_idx)
         #
@@ -231,5 +234,5 @@ if __name__ == "__main__":
         # q = q_des
         #
         # apply_position(q_des=q, j_to_q_idx=map_joint_idx_to_q_idx)
-        # pb.stepSimulation()
+        pb.stepSimulation()
         k += 1

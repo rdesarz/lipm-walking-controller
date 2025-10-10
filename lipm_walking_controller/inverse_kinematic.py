@@ -40,7 +40,9 @@ def se3_task_error_and_jacobian(model, data, q, frame_id, M_des):
     return e6, Jtask
 
 
-def solve_inverse_kinematics(q, com_target, oMf_target, params: InvKinSolverParams):
+def solve_inverse_kinematics(
+    q, com_target, oMf_fixed_foot, oMf_moving_foot, params: InvKinSolverParams
+):
     pin.forwardKinematics(params.model, params.data, q)
     pin.updateFramePlacements(params.model, params.data)
 
@@ -59,12 +61,12 @@ def solve_inverse_kinematics(q, com_target, oMf_target, params: InvKinSolverPara
         params.data,
         q,
         params.fixed_foot_frame,
-        params.data.oMf[params.fixed_foot_frame].copy(),  # hold current pose
+        oMf_fixed_foot,
     )
 
     # -------- Moving-foot soft pose task (6D) --------
     e_mf, J_mf = se3_task_error_and_jacobian(
-        params.model, params.data, q, params.moving_foot_frame, oMf_target
+        params.model, params.data, q, params.moving_foot_frame, oMf_moving_foot
     )
 
     # -------- Torso roll/pitch soft task --------
