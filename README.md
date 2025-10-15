@@ -42,6 +42,14 @@ purpose.
 
 ## Methodology
 
+### Zero Moment Point and Balance Criterion
+
+The Zero Moment Point (ZMP) is the point on the ground where the resultant contact forces between the feet and the 
+ground produce no moment about the horizontal axes. To maintain balance, the ZMP must remain within the robot’s support 
+polygon, defined as the convex hull of the contact areas of the feet. Intuitively, this ensures that the ground reaction
+forces can generate a counteracting moment to keep the feet flat and prevent tipping, maintaining dynamic equilibrium.
+For a more thorough explanation I recommend [this blog post](https://scaron.info/robotics/zero-tilting-moment-point.html) by Stéphane Caron
+
 ### Linear Inverted Pendulum Model
 
 The controller relies on a simplified representation of the robot dynamics.  
