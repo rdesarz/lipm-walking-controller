@@ -73,6 +73,7 @@ where $x_z$ denotes the ZMP, $x_c$ the CoM projection, and $z_c$ the constant Co
 
 ### Preview Control
 
+In Kajita's paper, the idea is to use a preview control in order to track and anticipate the ZMP reference change.
 The control input minimizes a quadratic cost over a finite horizon:
 
 $$
@@ -81,6 +82,14 @@ $$
 
 yielding a feedback + integral + preview law.  
 The resulting controller anticipates future ZMP references, ensuring stable walking trajectories.
+
+The result of the preview controller can be observed with the first example provided in the repository.
+
+### Swing foot trajectory generation
+
+### Inverse Kinematics
+
+### Integration in PyBullet
 
 ---
 
