@@ -48,12 +48,15 @@ The Zero Moment Point (ZMP) is the point on the ground where the resultant conta
 ground produce no moment about the horizontal axes. To maintain balance, the ZMP must remain within the robot’s support 
 polygon, defined as the convex hull of the contact areas of the feet. Intuitively, this ensures that the ground reaction
 forces can generate a counteracting moment to keep the feet flat and prevent tipping, maintaining dynamic equilibrium.
-For a more thorough explanation I recommend [this blog post](https://scaron.info/robotics/zero-tilting-moment-point.html) by Stéphane Caron
+For a more thorough explanation I recommend [this blog post](https://scaron.info/robotics/zero-tilting-moment-point.html) by Stéphane Caron.
 
 ### Linear Inverted Pendulum Model
 
-The controller relies on a simplified representation of the robot dynamics.  
-The Linear Inverted Pendulum Model (LIPM) is derived under the following assumptions:
+The first step of the controller is to define a reference ZMP trajectory, alternating from one foot to the other at each step.
+The objective is to establish a relationship between the position of this reference ZMP and the robot’s Center of Mass (CoM).
+This relationship can be derived from a simplified model of the robot’s dynamics known as the Linear Inverted Pendulum Model (LIPM).
+
+The LIPM is derived under the following assumptions:
 
 * The mass of the body is concentrated at a single point, the Center of Mass (CoM).  
 * Legs are massless and do not contribute to the system dynamics.  
