@@ -20,8 +20,8 @@ The animation below shows the controller in action in a Pybullet simulation:
 Humanoid walking requires the generation of dynamically stable trajectories of the Center of Mass (CoM) with 
 respect to the Zero-Moment Point (ZMP). This project implements the **discrete-time LIPM** dynamics and 
 the associated **optimal preview control law**, reproducing the approach used in model-based humanoid locomotion 
-control. The framework includes visualization and inverse kinematics modules, enabling reproducible experiments 
-on trajectory generation and tracking. 
+control. The framework includes controller and inverse kinematics modules. The controller is tested in simulation using 
+Pybullet, enabling reproducible experiments on trajectory generation and tracking. 
 
 ---
 
@@ -29,12 +29,13 @@ on trajectory generation and tracking.
 
 The objective is to reproduce and analyze the ZMP preview control pipeline:
 
-- Model the robot’s CoM using the 3D LIPM  
+- Model the robot’s CoM using the 3D LIPM
 - Compute optimal CoM trajectories given a reference ZMP sequence using preview control 
-- Generate and visualize corresponding foot trajectories
-- Apply inverse kinematics to produce consistent joint motions  
+- Generate corresponding foot trajectories
+- Apply inverse kinematics to produce consistent joint motions
+- Apply computed joint positions to the simulated robot in Pybullet
 
-The implementation prioritizes **clarity** and **experimental reproducibility**, making it suitable for education
+The implementation prioritizes **simplicity** and **experimental reproducibility**, making it suitable for education
 purpose.
 
 ---
