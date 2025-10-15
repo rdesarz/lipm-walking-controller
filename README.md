@@ -44,7 +44,15 @@ purpose.
 
 ### Linear Inverted Pendulum Model
 
-The CoM motion is modeled by the discrete-time linearized dynamics of the inverted pendulum:
+The controller relies on a simplified representation of the robot dynamics.  
+The Linear Inverted Pendulum Model (LIPM) is derived under the following assumptions:
+
+* The mass of the body is concentrated at a single point, the Center of Mass (CoM).  
+* Legs are massless and do not contribute to the system dynamics.  
+* The CoM moves on a horizontal plane at a constant height, eliminating vertical motion coupling.  
+* No angular momentum is generated about the CoM, meaning the upper body remains still to avoid producing additional moments.
+
+Under these assumptions and for small angles, the inverted pendulum dynamics can be linearized, leading to the following second-order linear equation:
 
 $$
 \ddot{x}_c = \frac{g}{z_c} (x_c - x_z)
