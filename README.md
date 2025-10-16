@@ -102,6 +102,8 @@ The figure below shows the generated trajectory for both foot with a height of 2
 
 ### Inverse Kinematics
 
+
+
 ### Integration in PyBullet
 
 ---
@@ -182,6 +184,7 @@ The next steps aim at extending this framework toward dynamically consistent hum
 
 * Disturbance rejection analysis under external perturbations
 * Development of a footstep planner for omnidirectional locomotion 
+* Improvement of the swing foot trajectory generation to improve contact phase with the floor
 * Integration of Model Predictive Control (MPC) for real-time trajectory optimization
 
 ## References
