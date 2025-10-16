@@ -87,6 +87,13 @@ The result of the preview controller can be observed with the first example prov
 
 ### Swing foot trajectory generation
 
+Walking is organized into fixed-duration phases: Single Support (SS) and Double Support (DS). In SS one foot is the 
+swing foot and the other is the stance foot; in DS both feet are in contact and no swing foot exists. The swing foot 
+horizontal position follows a sinusoidal time law along the world x-axis from $x_0$ to $x_1$ over duration $T_SS$. 
+The lateral position $y$ stays constant. The vertical motion is a simple bump with peak clearance $h$ above the ground
+reference, returning to the ground at touchdown. Foot orientation is kept constant with yaw=0; 
+the sole remains parallel to the floor. All phase durations are configurable.
+
 ### Inverse Kinematics
 
 ### Integration in PyBullet
@@ -132,7 +139,9 @@ Linear forward motion with sinusoidal vertical swing.
 python examples/example_2_feet_motion.py
 ```
 
-<img src="img/foot_motion.png">
+<p align="center">
+  <img src="img/foot_motion.png" alt="desc" width="420">
+</p>
 
 ### Example 3: Inverse kinematics
 
