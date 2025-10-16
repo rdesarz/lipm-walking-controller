@@ -94,6 +94,12 @@ The lateral position $y$ stays constant. The vertical motion is a simple bump wi
 reference, returning to the ground at touchdown. Foot orientation is kept constant with yaw=0; 
 the sole remains parallel to the floor. All phase durations are configurable.
 
+The figure below shows the generated trajectory for both foot with a height of 20cm:
+
+<p align="center">
+  <img src="img/feet_traj.png" alt="desc" width="420">
+</p>
+
 ### Inverse Kinematics
 
 ### Integration in PyBullet
