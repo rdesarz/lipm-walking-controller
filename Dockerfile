@@ -1,0 +1,21 @@
+# Dockerfile
+FROM python:3.11
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+# Optional but useful for PyBullet/TinyRenderer imports
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY . /app
+
+# Install the package and its Python deps
+RUN python -m pip install --upgrade pip && \
+    pip install .
+
+# Default command: nothing. Use `docker run ... python <script>.py`
+CMD [ "python", "-c", "import sys; print('lipm-walking-controller container ready')" ]
