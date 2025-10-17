@@ -1,3 +1,5 @@
+import argparse
+from pathlib import Path
 from time import sleep, clock_gettime
 import numpy as np
 import pinocchio as pin
@@ -15,6 +17,16 @@ from lipm_walking_controller.model import Talos
 from lipm_walking_controller.visualizer import Visualizer
 
 if __name__ == "__main__":
+    p = argparse.ArgumentParser()
+    p.add_argument("--path-talos-data", type=Path, help="Path to talos_data root")
+    p.add_argument(
+        "-v",
+        "--open-visualizer",
+        action="store_true",
+        help="If enabled, will open the web visualizer when the program is launched",
+    )
+    args = p.parse_args()
+
     # General parameters
     dt = 0.02  # Delta of time of the model simulation
 
@@ -39,13 +51,13 @@ if __name__ == "__main__":
     ctrler_mat = compute_preview_control_matrices(ctrler_params, dt)
 
     # Initialize the model position
-    talos = Talos(path_to_model="~/projects", reduced=False)
+    talos = Talos(path_to_model=args.path_talos_data.expanduser(), reduced=False)
     q = talos.set_and_get_default_pose()
     oMf_rf_fixed = talos.data.oMf[talos.right_foot_id].copy()
     oMf_lf_fixed = talos.data.oMf[talos.left_foot_id].copy()
 
     # Initialize visualizer
-    viz = Visualizer(talos)
+    viz = Visualizer(robot_model=talos, open_viewer=args.open_visualizer)
 
     lf_initial_pose = oMf_lf_fixed.translation
     rf_initial_pose = oMf_rf_fixed.translation
