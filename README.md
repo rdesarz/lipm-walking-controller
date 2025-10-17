@@ -129,6 +129,8 @@ cd lipm-walking-controller
 docker build -t lipm-walking-controller .
 ```
 
+## Examples
+
 ### Example 1: Preview Control Demonstration
 
 This experiment demonstrates the LIPM preview control generating a stable CoM trajectory tracking a predefined ZMP reference.
