@@ -1,9 +1,11 @@
 import math
+import argparse
+import os
+from pathlib import Path
 
 import numpy as np
 import pybullet as pb
 import pybullet_data
-import os
 import pinocchio as pin
 
 from lipm_walking_controller.foot import compute_feet_path_and_poses
@@ -28,6 +30,10 @@ from lipm_walking_controller.simulation import (
 )
 
 if __name__ == "__main__":
+    p = argparse.ArgumentParser()
+    p.add_argument("--path-talos-data", type=Path, help="Path to talos_data root")
+    args = p.parse_args()
+
     dt = 1.0 / 250.0
     cid = pb.connect(pb.GUI, options="--window_title=PyBullet --width=1920 --height=1080")
     pb.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -65,14 +71,17 @@ if __name__ == "__main__":
     ctrler_mat = compute_preview_control_matrices(ctrler_params, dt)
 
     plane = pb.loadURDF("plane.urdf")
-    PKG_PARENT = os.path.expanduser(os.environ.get("PKG_PARENT", "~/projects"))
-    URDF = os.path.join(PKG_PARENT, "talos_data/urdf/talos_full.urdf")
+    path_to_urdf = args.path_talos_data.expanduser() / "talos_data" / "urdf" / "talos_full.urdf"
     pb_robot = pb.loadURDF(
-        URDF, [0, 0, 0], [0, 0, 0, 1], useFixedBase=False, flags=pb.URDF_MERGE_FIXED_LINKS
+        str(path_to_urdf),
+        [0, 0, 0],
+        [0, 0, 0, 1],
+        useFixedBase=False,
+        flags=pb.URDF_MERGE_FIXED_LINKS,
     )
 
     # Load pinocchio model of Talos
-    pin_talos = Talos(path_to_model="~/projects", reduced=False)
+    pin_talos = Talos(path_to_model=args.path_talos_data.expanduser(), reduced=False)
     q = pin_talos.set_and_get_default_pose()
 
     # Compute the right and left foot position as well as the base initial position

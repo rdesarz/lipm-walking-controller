@@ -1,4 +1,5 @@
 import os, sys
+from pathlib import Path
 
 import pinocchio as pin
 
@@ -20,20 +21,11 @@ def set_joint(q, model, joint_name, val):
 
 
 class Talos:
-    def __init__(self, path_to_model: str, reduced=True):
+    def __init__(self, path_to_model: Path, reduced=True):
         # Load full model
-        PKG_PARENT = os.path.expanduser(os.environ.get("PKG_PARENT", path_to_model))
-        URDF = os.path.join(PKG_PARENT, "talos_data/urdf/talos_full.urdf")
-
-        if not os.path.isfile(URDF):
-            print(
-                f"URDF not found: {URDF}\nSet PKG_PARENT or clone talos_data.",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-
+        path_to_urdf = path_to_model / "talos_data" / "urdf" / "talos_full.urdf"
         full_model, full_col_model, full_vis_model = pin.buildModelsFromUrdf(
-            URDF, PKG_PARENT, pin.JointModelFreeFlyer()
+            path_to_urdf, str(path_to_model), pin.JointModelFreeFlyer()
         )
 
         q = pin.neutral(full_model)
