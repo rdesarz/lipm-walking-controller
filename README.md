@@ -119,14 +119,14 @@ The figure below shows the generated trajectory for both foot with a height of 2
 ---
 
 
-## Examples
+## Installation
 
-Before running an example, clone the repository and install the dependencies:
+Docker is recommended to run the examples. Here are the commands that you need to setup the project:
 
 ```bash
 git clone https://github.com/rdesarz/lipm-walking-controller.git
 cd lipm-walking-controller
-pip install ".[dev]"
+docker build -t lipm-walking-controller .
 ```
 
 ### Example 1: Preview Control Demonstration
@@ -134,7 +134,7 @@ pip install ".[dev]"
 This experiment demonstrates the LIPM preview control generating a stable CoM trajectory tracking a predefined ZMP reference.
 
 ```bash
-python examples/example_1_lipm_preview_control.py
+docker run --rm -it lipm-walking-controller python examples/example_1_lipm_preview_control.py
 ```
 
 ![](img/preview_control.gif)
@@ -144,7 +144,7 @@ python examples/example_1_lipm_preview_control.py
 Linear forward motion with sinusoidal vertical swing.
 
 ```bash
-python examples/example_2_feet_motion.py
+docker run --rm -it lipm-walking-controller python examples/example_2_feet_motion.py
 ```
 
 <p align="center">
@@ -157,7 +157,7 @@ Inverse kinematics are computed to track CoM and foot trajectories using the Tal
 This produces a full kinematic walking sequence without dynamic simulation.
 
 ```bash
-python examples/example_3_walk_inverse_kinematic.py
+docker run --rm -it -p 7000:7000 -p 6000:6000 lipm-walking-controller python examples/example_3_walk_inverse_kinematic.py --path-talos-data "/"
 ```
 
 <p align="center">
@@ -170,7 +170,7 @@ In this example we integrate the controller and inverse kinematic modules inside
 a simulated environment:
 
 ```bash
-python examples/example_4_physics_simulation.py
+docker run --rm -it --env DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:ro --device /dev/dri:/dev/dri lipm-walking-controller python examples/example_4_physics_simulation.py --path-talos-data "/"
 ```
 
 <p align="center">
