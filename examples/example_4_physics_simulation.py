@@ -4,7 +4,6 @@ from pathlib import Path
 
 import numpy as np
 import pybullet as pb
-import pybullet_data
 import pinocchio as pin
 
 from lipm_walking_controller.foot import compute_feet_path_and_poses
@@ -27,6 +26,7 @@ from lipm_walking_controller.simulation import (
     apply_position,
     get_q_from_pybullet,
     build_map_joints,
+    Simulator,
 )
 
 if __name__ == "__main__":
@@ -35,20 +35,6 @@ if __name__ == "__main__":
     args = p.parse_args()
 
     dt = 1.0 / 250.0
-    cid = pb.connect(pb.GUI, options="--window_title=PyBullet --width=1920 --height=1080")
-    pb.setAdditionalSearchPath(pybullet_data.getDataPath())
-    pb.setGravity(0, 0, -9.81)
-    pb.setPhysicsEngineParameter(
-        fixedTimeStep=dt,
-        numSolverIterations=100,
-        numSubSteps=1,
-        useSplitImpulse=1,
-        splitImpulsePenetrationThreshold=0.01,
-        contactSlop=0.001,
-        erp=0.2,
-        contactERP=0.2,
-        frictionERP=0.2,
-    )
 
     # Preview controller parameters
     t_preview = 1.6  # Time horizon used for the preview controller
@@ -70,15 +56,7 @@ if __name__ == "__main__":
     )
     ctrler_mat = compute_preview_control_matrices(ctrler_params, dt)
 
-    plane = pb.loadURDF("plane.urdf")
-    path_to_urdf = args.path_talos_data.expanduser() / "talos_data" / "urdf" / "talos_full.urdf"
-    pb_robot = pb.loadURDF(
-        str(path_to_urdf),
-        [0, 0, 0],
-        [0, 0, 0, 1],
-        useFixedBase=False,
-        flags=pb.URDF_MERGE_FIXED_LINKS,
-    )
+    simulator = Simulator(dt, args.path_talos_data.expanduser())
 
     # Load pinocchio model of Talos
     pin_talos = Talos(path_to_model=args.path_talos_data.expanduser(), reduced=False)
@@ -121,12 +99,12 @@ if __name__ == "__main__":
     pin.forwardKinematics(pin_talos.model, pin_talos.data, q)
     pin.updateFramePlacements(pin_talos.model, pin_talos.data)
 
-    map_joints = build_map_joints(pb_robot, pin_talos)
-    reset_pybullet_from_q(pb_robot, q, map_joints)
+    map_joints = build_map_joints(simulator.robot, pin_talos)
+    reset_pybullet_from_q(simulator.robot, q, map_joints)
 
     # First we hard reset the position of the robot and let the simulation run for a few iterations with 0 gravity to
     # stabilize the robot
-    reset_pybullet_from_q(pb_robot, q, map_joints)
+    reset_pybullet_from_q(simulator.robot, q, map_joints)
     pb.setGravity(0, 0, 0)
     for _ in range(5):
         pb.stepSimulation()  # settle contacts before enabling motors
@@ -138,7 +116,7 @@ if __name__ == "__main__":
     y_k = np.array([0.0, com_initial_target[1], 0.0, 0.0], dtype=float)
 
     for _ in range(math.ceil(2.0 / dt)):
-        q = get_q_from_pybullet(pb_robot, pin_talos.model, map_joints)
+        q = get_q_from_pybullet(simulator.robot, pin_talos.model, map_joints)
 
         # # Get zmp ref horizon
         zmp_ref_horizon = np.ones((ctrler_params.n_preview_steps - 1, 2)) * feet_mid[0:2]
@@ -163,8 +141,8 @@ if __name__ == "__main__":
             cameraTargetPosition=[x_k[1], 0.0, 0.0],
         )
 
-        apply_position(robot=pb_robot, q_des=q_des, j_to_q_idx=map_joints)
-        pb.stepSimulation()
+        apply_position(robot=simulator.robot, q_des=q_des, j_to_q_idx=map_joints)
+        simulator.step()
 
     # We start the walking phase
     k = 0
@@ -198,7 +176,7 @@ if __name__ == "__main__":
     target = np.zeros(3)
 
     while k < len(phases):
-        q = get_q_from_pybullet(pb_robot, pin_talos.model, map_joints)
+        q = get_q_from_pybullet(simulator.robot, pin_talos.model, map_joints)
 
         zmp_ref_horizon = zmp_padded[k + 1 : k + ctrler_params.n_preview_steps]
 
@@ -241,7 +219,7 @@ if __name__ == "__main__":
             )
             q = q_new
 
-        apply_position(robot=pb_robot, q_des=q, j_to_q_idx=map_joints)
+        apply_position(robot=simulator.robot, q_des=q, j_to_q_idx=map_joints)
 
         # Uncomment to follow the center of mass of the robot
         pb.resetDebugVisualizerCamera(
@@ -251,9 +229,9 @@ if __name__ == "__main__":
             cameraTargetPosition=[x_k[1], 0.0, 0.0],
         )
 
-        pb.stepSimulation()
+        simulator.step()
         k += 1
 
     # Infinite loop to display the ending position
     while True:
-        pb.stepSimulation()
+        simulator.step()

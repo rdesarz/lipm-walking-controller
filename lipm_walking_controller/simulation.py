@@ -1,6 +1,9 @@
+from pathlib import Path
+
 import numpy as np
 import pinocchio as pin
 import pybullet as pb
+import pybullet_data
 
 
 def yaw_of(R):
@@ -110,3 +113,33 @@ def build_map_joints(pb_robot, pin_robot):
             map_joint_idx_to_q_idx[j] = jid
 
     return map_joint_idx_to_q_idx
+
+
+class Simulator:
+    def __init__(self, dt, path_to_model: Path):
+        self.cid = pb.connect(pb.GUI, options="--window_title=PyBullet --width=1920 --height=1080")
+        pb.setAdditionalSearchPath(pybullet_data.getDataPath())
+        pb.setGravity(0, 0, -9.81)
+        pb.setPhysicsEngineParameter(
+            fixedTimeStep=dt,
+            numSolverIterations=100,
+            numSubSteps=1,
+            useSplitImpulse=1,
+            splitImpulsePenetrationThreshold=0.01,
+            contactSlop=0.001,
+            erp=0.2,
+            contactERP=0.2,
+            frictionERP=0.2,
+        )
+        plane = pb.loadURDF("plane.urdf")
+        path_to_urdf = path_to_model / "talos_data" / "urdf" / "talos_full.urdf"
+        self.robot = pb.loadURDF(
+            str(path_to_urdf),
+            [0, 0, 0],
+            [0, 0, 0, 1],
+            useFixedBase=False,
+            flags=pb.URDF_MERGE_FIXED_LINKS,
+        )
+
+    def step(self):
+        pb.stepSimulation()
