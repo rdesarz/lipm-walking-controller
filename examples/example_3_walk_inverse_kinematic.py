@@ -51,7 +51,7 @@ if __name__ == "__main__":
     ctrler_mat = compute_preview_control_matrices(ctrler_params, dt)
 
     # Initialize the model position
-    talos = Talos(path_to_model=args.path_talos_data.expanduser(), reduced=False)
+    talos = Talos(path_to_model=args.path_talos_data.expanduser(), reduced=True)
     q = talos.set_and_get_default_pose()
     oMf_rf_fixed = talos.data.oMf[talos.right_foot_id].copy()
     oMf_lf_fixed = talos.data.oMf[talos.left_foot_id].copy()

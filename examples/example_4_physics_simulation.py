@@ -17,7 +17,8 @@ from lipm_walking_controller.preview_control import (
     update_control,
     compute_zmp_ref,
 )
-from lipm_walking_controller.model import Talos
+from lipm_walking_controller.model import Talos, print_joints
+
 from lipm_walking_controller.simulation import (
     snap_feet_to_plane,
     compute_base_from_foot_target,
@@ -110,6 +111,7 @@ if __name__ == "__main__":
         w_mf=100.0,
         mu=1e-4,
         dt=dt,
+        locked_joints=pin_talos.get_locked_joints_idx(),
     )
     q_des, dq = solve_inverse_kinematics(
         q, com_initial_target, oMf_lf_tgt, oMf_rf_tgt, oMf_torso, ik_sol_params
