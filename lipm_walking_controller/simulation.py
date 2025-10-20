@@ -154,3 +154,11 @@ class Simulator:
 
     def get_q(self, nq):
         return get_q_from_pybullet(self.robot, nq, self.map_joints)
+
+    def update_camera_to_follow_pos(self, x, y, z):
+        pb.resetDebugVisualizerCamera(
+            cameraDistance=4.0,
+            cameraYaw=50,
+            cameraPitch=-40,
+            cameraTargetPosition=[x, y, z],
+        )

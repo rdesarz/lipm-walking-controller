@@ -16,7 +16,7 @@ from lipm_walking_controller.preview_control import (
     update_control,
     compute_zmp_ref,
 )
-from lipm_walking_controller.model import Talos, print_joints
+from lipm_walking_controller.model import Talos
 
 from lipm_walking_controller.simulation import (
     snap_feet_to_plane,
@@ -129,13 +129,7 @@ if __name__ == "__main__":
         )
 
         # Uncomment to follow the center of mass of the robot
-        pb.resetDebugVisualizerCamera(
-            cameraDistance=4.0,
-            cameraYaw=50,
-            cameraPitch=-40,
-            cameraTargetPosition=[x_k[1], 0.0, 0.0],
-        )
-
+        simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
         simulator.apply_position_to_robot(q_des)
         simulator.step()
 
@@ -161,11 +155,6 @@ if __name__ == "__main__":
     zmp_padded = np.vstack(
         [zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)]
     )
-
-    dist = 3.0  # meters from target
-    pitch = 20.0  # deg
-    height = 0.8  # target z offset
-    alpha = 0.15  # smoothing 0..1
 
     # state for smoothing
     target = np.zeros(3)
@@ -217,12 +206,7 @@ if __name__ == "__main__":
         simulator.apply_position_to_robot(q)
 
         # Uncomment to follow the center of mass of the robot
-        pb.resetDebugVisualizerCamera(
-            cameraDistance=4.0,
-            cameraYaw=50,
-            cameraPitch=-40,
-            cameraTargetPosition=[x_k[1], 0.0, 0.0],
-        )
+        simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
 
         simulator.step()
         k += 1
