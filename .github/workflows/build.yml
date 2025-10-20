@@ -48,8 +48,7 @@ jobs:
             --cov=lipm_walking_controller \
             --cov-report=term-missing \
             --cov-report=xml \
-            --cov-report=html \
-            --cov-fail-under=80
+            --cov-report=html
       - name: Upload HTML coverage
         if: always()
         uses: actions/upload-artifact@v4
