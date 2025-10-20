@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import pinocchio as pin
 
 
@@ -17,6 +18,16 @@ def set_joint(q, model, joint_name, val):
     jid = model.getJointId(joint_name)
     if jid > 0 and model.joints[jid].nq == 1:
         q[model.joints[jid].idx_q] = val
+
+
+def q_from_base_and_joints(q, oMb):
+    R = oMb.rotation
+    p = oMb.translation
+    quat = pin.Quaternion(R)  # xyzw
+    q_out = q.copy()
+    q_out[:3] = p
+    q_out[3:7] = np.array([quat.x, quat.y, quat.z, quat.w])
+    return q_out
 
 
 class Talos:

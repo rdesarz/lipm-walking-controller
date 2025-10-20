@@ -48,16 +48,6 @@ def compute_base_from_foot_target(model, data, q, foot_frame_id, oMf_target):
     return oMb_new
 
 
-def q_from_base_and_joints(q, oMb):
-    R = oMb.rotation
-    p = oMb.translation
-    quat = pin.Quaternion(R)  # xyzw
-    q_out = q.copy()
-    q_out[:3] = p
-    q_out[3:7] = np.array([quat.x, quat.y, quat.z, quat.w])
-    return q_out
-
-
 def reset_pybullet_from_q(robot, q, map_joint_idx_to_q_idx):
     # base
     base_pos = q[:3]

@@ -16,12 +16,11 @@ from lipm_walking_controller.preview_control import (
     update_control,
     compute_zmp_ref,
 )
-from lipm_walking_controller.model import Talos
+from lipm_walking_controller.model import Talos, q_from_base_and_joints
 
 from lipm_walking_controller.simulation import (
     snap_feet_to_plane,
     compute_base_from_foot_target,
-    q_from_base_and_joints,
     Simulator,
 )
 
@@ -130,6 +129,7 @@ if __name__ == "__main__":
 
         # Uncomment to follow the center of mass of the robot
         simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
+
         simulator.apply_position_to_robot(q_des)
         simulator.step()
 
