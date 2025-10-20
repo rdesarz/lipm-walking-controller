@@ -4,7 +4,7 @@ from time import sleep, clock_gettime
 import numpy as np
 import pinocchio as pin
 
-from lipm_walking_controller.controller import (
+from lipm_walking_controller.preview_control import (
     compute_preview_control_matrices,
     compute_zmp_ref,
     update_control,

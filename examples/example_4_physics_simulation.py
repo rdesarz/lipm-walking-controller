@@ -1,6 +1,5 @@
 import math
 import argparse
-import os
 from pathlib import Path
 
 import numpy as np
@@ -12,7 +11,7 @@ from lipm_walking_controller.foot import compute_feet_path_and_poses
 
 from lipm_walking_controller.inverse_kinematic import InvKinSolverParams, solve_inverse_kinematics
 
-from lipm_walking_controller.controller import (
+from lipm_walking_controller.preview_control import (
     PreviewControllerParams,
     compute_preview_control_matrices,
     update_control,

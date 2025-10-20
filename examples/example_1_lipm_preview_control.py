@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from shapely import Polygon
 
-from lipm_walking_controller.controller import (
+from lipm_walking_controller.preview_control import (
     compute_zmp_ref,
     compute_preview_control_matrices,
     update_control,
