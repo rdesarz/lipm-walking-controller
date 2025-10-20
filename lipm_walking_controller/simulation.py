@@ -133,7 +133,7 @@ class Simulator:
 
         self.map_joints = build_map_joints(self.robot, model)
 
-        self.line = []
+        self.line = None
 
     def step(self):
         pb.stepSimulation()
@@ -160,26 +160,39 @@ class Simulator:
         cps_all = []
 
         cps_all.extend(pb.getContactPoints(bodyA=self.robot, bodyB=self.plane))
-        cps_all.extend(pb.getContactPoints(bodyA=self.plane, bodyB=self.robot))
 
-        # pb.removeAllUserDebugItems()
-
-        for cp in cps_all[0:1]:
+        mean_x = 0.0
+        mean_y = 0.0
+        mean_z = 0.0
+        total_force = 0.0
+        n_B = [0.0, 0.0, 0.0]
+        for cp in cps_all:
             # tuple fields (relevant):
             # cp[4]=posOnA (world xyz), cp[5]=posOnB, cp[6]=normalOnB (world xyz),
             # cp[7]=distance, cp[8]=normalForce
             posB = cp[6]
             n_B = cp[7]
             fN = cp[9]  # Newtons
-            start = posB
-            end = (
-                posB[0] + n_B[0] * fN * scale,
-                posB[1] + n_B[1] * fN * scale,
-                posB[2] + n_B[2] * fN * scale,
+            mean_x += posB[0]
+            mean_y += posB[1]
+            mean_z += posB[2]
+            total_force += fN
+
+        start = [mean_x / len(cps_all), mean_y / len(cps_all), mean_z / len(cps_all)]
+        end = (
+            start[0] + n_B[0] * total_force * scale,
+            start[1] + n_B[1] * total_force * scale,
+            start[2] + n_B[2] * total_force * scale,
+        )
+
+        # arrow for normal force
+        if self.line is None:
+            self.line = pb.addUserDebugLine(start, end, lineColorRGB=color, lineWidth=3)
+        else:
+            pb.addUserDebugLine(
+                start,
+                end,
+                lineColorRGB=color,
+                lineWidth=3,
+                replaceItemUniqueId=self.line,
             )
-
-            # arrow for normal force
-            pb.addUserDebugLine(start, end, lineColorRGB=color, lifeTime=life, lineWidth=3)
-
-            # label force magnitude
-            # pb.addUserDebugText(f"{fN:.0f}N", end, textColorRGB=color, lifeTime=life, textSize=1.2)

@@ -132,6 +132,7 @@ if __name__ == "__main__":
 
         simulator.apply_position_to_robot(q_des)
         simulator.step()
+        simulator.draw_contact_forces(color=(0, 1, 0))
 
     lf_initial_pose = oMf_lf_tgt.translation
     rf_initial_pose = oMf_rf_tgt.translation
@@ -206,7 +207,7 @@ if __name__ == "__main__":
         simulator.step()
 
         # Uncomment to draw contact forces
-        # simulator.draw_contact_forces(color=(0, 1, 0))
+        simulator.draw_contact_forces(color=(0, 1, 0))
 
     # Infinite loop to display the ending position
     while True:
