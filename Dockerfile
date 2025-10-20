@@ -21,6 +21,3 @@ WORKDIR /app
 # Install the package and its Python deps
 RUN python -m pip install --upgrade pip && \
     pip install .
-
-# Default command: nothing. Use `docker run ... python <script>.py`
-CMD [ "python", "-c", "import sys; print('lipm-walking-controller container ready')" ]
