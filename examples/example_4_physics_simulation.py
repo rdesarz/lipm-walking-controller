@@ -22,10 +22,6 @@ from lipm_walking_controller.simulation import (
     snap_feet_to_plane,
     compute_base_from_foot_target,
     q_from_base_and_joints,
-    reset_pybullet_from_q,
-    apply_position,
-    get_q_from_pybullet,
-    build_map_joints,
     Simulator,
 )
 
@@ -56,20 +52,21 @@ if __name__ == "__main__":
     )
     ctrler_mat = compute_preview_control_matrices(ctrler_params, dt)
 
-    simulator = Simulator(dt, args.path_talos_data.expanduser())
-
     # Load pinocchio model of Talos
-    pin_talos = Talos(path_to_model=args.path_talos_data.expanduser(), reduced=False)
-    q = pin_talos.set_and_get_default_pose()
+    talos = Talos(path_to_model=args.path_talos_data.expanduser(), reduced=False)
+    q = talos.set_and_get_default_pose()
+
+    # Initialize simulation
+    simulator = Simulator(dt, args.path_talos_data.expanduser(), talos)
 
     # Compute the right and left foot position as well as the base initial position
-    oMf_rf0 = pin_talos.data.oMf[pin_talos.right_foot_id].copy()
-    oMf_lf0 = pin_talos.data.oMf[pin_talos.left_foot_id].copy()
+    oMf_rf0 = talos.data.oMf[talos.right_foot_id].copy()
+    oMf_lf0 = talos.data.oMf[talos.left_foot_id].copy()
     oMf_lf_tgt, oMf_rf_tgt = snap_feet_to_plane(oMf_lf0, oMf_rf0, z_offset=-0.075, keep_yaw=True)
 
-    oMf_torso = pin_talos.data.oMf[pin_talos.torso_id].copy()
+    oMf_torso = talos.data.oMf[talos.torso_id].copy()
     oMb_init = compute_base_from_foot_target(
-        pin_talos.model, pin_talos.data, q, pin_talos.left_foot_id, oMf_lf_tgt
+        talos.model, talos.data, q, talos.left_foot_id, oMf_lf_tgt
     )
     q = q_from_base_and_joints(q, oMb_init)
 
@@ -79,35 +76,33 @@ if __name__ == "__main__":
 
     # We run a single inverse kinematic iteration to get the desired initial position of the robot
     ik_sol_params = InvKinSolverParams(
-        fixed_foot_frame=pin_talos.left_foot_id,
-        moving_foot_frame=pin_talos.right_foot_id,
-        torso_frame=pin_talos.torso_id,
-        model=pin_talos.model,
-        data=pin_talos.data,
+        fixed_foot_frame=talos.left_foot_id,
+        moving_foot_frame=talos.right_foot_id,
+        torso_frame=talos.torso_id,
+        model=talos.model,
+        data=talos.data,
         w_torso=10.0,
         w_com=10.0,
         w_mf=100.0,
         mu=1e-4,
         dt=dt,
-        locked_joints=pin_talos.get_locked_joints_idx(),
+        locked_joints=talos.get_locked_joints_idx(),
     )
     q_des, dq = solve_inverse_kinematics(
         q, com_initial_target, oMf_lf_tgt, oMf_rf_tgt, oMf_torso, ik_sol_params
     )
     q = q_des
 
-    pin.forwardKinematics(pin_talos.model, pin_talos.data, q)
-    pin.updateFramePlacements(pin_talos.model, pin_talos.data)
+    pin.forwardKinematics(talos.model, talos.data, q)
+    pin.updateFramePlacements(talos.model, talos.data)
 
-    map_joints = build_map_joints(simulator.robot, pin_talos)
-    reset_pybullet_from_q(simulator.robot, q, map_joints)
+    simulator.reset_robot(q)
 
     # First we hard reset the position of the robot and let the simulation run for a few iterations with 0 gravity to
     # stabilize the robot
-    reset_pybullet_from_q(simulator.robot, q, map_joints)
     pb.setGravity(0, 0, 0)
     for _ in range(5):
-        pb.stepSimulation()  # settle contacts before enabling motors
+        simulator.step()  # settle contacts before enabling motors
 
     # Then we start a stabilization phase where the robot has to maintain its CoM at a fixed position
     pb.setGravity(0, 0, -9.81)
@@ -116,7 +111,7 @@ if __name__ == "__main__":
     y_k = np.array([0.0, com_initial_target[1], 0.0, 0.0], dtype=float)
 
     for _ in range(math.ceil(2.0 / dt)):
-        q = get_q_from_pybullet(simulator.robot, pin_talos.model, map_joints)
+        q = simulator.get_q(talos.model.nq)
 
         # # Get zmp ref horizon
         zmp_ref_horizon = np.ones((ctrler_params.n_preview_steps - 1, 2)) * feet_mid[0:2]
@@ -141,7 +136,7 @@ if __name__ == "__main__":
             cameraTargetPosition=[x_k[1], 0.0, 0.0],
         )
 
-        apply_position(robot=simulator.robot, q_des=q_des, j_to_q_idx=map_joints)
+        simulator.apply_position_to_robot(q_des)
         simulator.step()
 
     # We start the walking phase
@@ -176,7 +171,7 @@ if __name__ == "__main__":
     target = np.zeros(3)
 
     while k < len(phases):
-        q = get_q_from_pybullet(simulator.robot, pin_talos.model, map_joints)
+        q = simulator.get_q(talos.model.nq)
 
         zmp_ref_horizon = zmp_padded[k + 1 : k + ctrler_params.n_preview_steps]
 
@@ -189,8 +184,8 @@ if __name__ == "__main__":
 
         # Alternate between feet
         if phases[k] < 0.0:
-            ik_sol_params.fixed_foot_frame = pin_talos.right_foot_id
-            ik_sol_params.moving_foot_frame = pin_talos.left_foot_id
+            ik_sol_params.fixed_foot_frame = talos.right_foot_id
+            ik_sol_params.moving_foot_frame = talos.left_foot_id
 
             oMf_lf = pin.SE3(oMf_lf_tgt.rotation, lf_path[k])
             oMf_lf_tgt = oMf_lf
@@ -204,8 +199,8 @@ if __name__ == "__main__":
             )
             q = q_new
         else:
-            ik_sol_params.fixed_foot_frame = pin_talos.left_foot_id
-            ik_sol_params.moving_foot_frame = pin_talos.right_foot_id
+            ik_sol_params.fixed_foot_frame = talos.left_foot_id
+            ik_sol_params.moving_foot_frame = talos.right_foot_id
 
             oMf_rf = pin.SE3(oMf_rf_tgt.rotation, rf_path[k])
             oMf_rf_tgt = oMf_rf
@@ -219,7 +214,7 @@ if __name__ == "__main__":
             )
             q = q_new
 
-        apply_position(robot=simulator.robot, q_des=q, j_to_q_idx=map_joints)
+        simulator.apply_position_to_robot(q)
 
         # Uncomment to follow the center of mass of the robot
         pb.resetDebugVisualizerCamera(

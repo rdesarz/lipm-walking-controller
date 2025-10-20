@@ -91,8 +91,8 @@ def reset_position(robot, q_des, j_to_q_idx):
         pb.resetJointState(robot, j_id, val, 0.0)
 
 
-def get_q_from_pybullet(robot, model, map_joint_idx_to_q_idx):
-    q = np.zeros(model.nq)
+def get_q_from_pybullet(robot, nq, map_joint_idx_to_q_idx):
+    q = np.zeros(nq)
     base_pos, base_quat = pb.getBasePositionAndOrientation(robot)
     q[:7] = np.concatenate([base_pos, base_quat])  # base position + orientation
 
@@ -103,12 +103,12 @@ def get_q_from_pybullet(robot, model, map_joint_idx_to_q_idx):
     return q
 
 
-def build_map_joints(pb_robot, pin_robot):
+def build_map_joints(robot, model):
     map_joint_idx_to_q_idx = {}
-    for j in range(pb.getNumJoints(pb_robot)):
-        joint_name = pb.getJointInfo(pb_robot, j)[1]
+    for j in range(pb.getNumJoints(robot)):
+        joint_name = pb.getJointInfo(robot, j)[1]
 
-        jid = pin_robot.get_joint_id(joint_name)
+        jid = model.get_joint_id(joint_name)
         if jid is not None and jid >= 0:
             map_joint_idx_to_q_idx[j] = jid
 
@@ -116,7 +116,7 @@ def build_map_joints(pb_robot, pin_robot):
 
 
 class Simulator:
-    def __init__(self, dt, path_to_model: Path):
+    def __init__(self, dt, path_to_model: Path, model):
         self.cid = pb.connect(pb.GUI, options="--window_title=PyBullet --width=1920 --height=1080")
         pb.setAdditionalSearchPath(pybullet_data.getDataPath())
         pb.setGravity(0, 0, -9.81)
@@ -141,5 +141,16 @@ class Simulator:
             flags=pb.URDF_MERGE_FIXED_LINKS,
         )
 
+        self.map_joints = build_map_joints(self.robot, model)
+
     def step(self):
         pb.stepSimulation()
+
+    def reset_robot(self, q):
+        reset_pybullet_from_q(self.robot, q, self.map_joints)
+
+    def apply_position_to_robot(self, q):
+        apply_position(robot=self.robot, q_des=q, j_to_q_idx=self.map_joints)
+
+    def get_q(self, nq):
+        return get_q_from_pybullet(self.robot, nq, self.map_joints)
