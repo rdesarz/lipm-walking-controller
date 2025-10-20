@@ -121,7 +121,7 @@ class Simulator:
             contactERP=0.2,
             frictionERP=0.2,
         )
-        plane = pb.loadURDF("plane.urdf")
+        self.plane = pb.loadURDF("plane.urdf")
         path_to_urdf = path_to_model / "talos_data" / "urdf" / "talos_full.urdf"
         self.robot = pb.loadURDF(
             str(path_to_urdf),
@@ -132,6 +132,8 @@ class Simulator:
         )
 
         self.map_joints = build_map_joints(self.robot, model)
+
+        self.line = []
 
     def step(self):
         pb.stepSimulation()
@@ -152,3 +154,32 @@ class Simulator:
             cameraPitch=-40,
             cameraTargetPosition=[x, y, z],
         )
+
+    def draw_contact_forces(self, color=(0, 1, 0), scale=0.002, life=0.2):
+        # iterate all foot links if you want per-foot colors
+        cps_all = []
+
+        cps_all.extend(pb.getContactPoints(bodyA=self.robot, bodyB=self.plane))
+        cps_all.extend(pb.getContactPoints(bodyA=self.plane, bodyB=self.robot))
+
+        # pb.removeAllUserDebugItems()
+
+        for cp in cps_all[0:1]:
+            # tuple fields (relevant):
+            # cp[4]=posOnA (world xyz), cp[5]=posOnB, cp[6]=normalOnB (world xyz),
+            # cp[7]=distance, cp[8]=normalForce
+            posB = cp[6]
+            n_B = cp[7]
+            fN = cp[9]  # Newtons
+            start = posB
+            end = (
+                posB[0] + n_B[0] * fN * scale,
+                posB[1] + n_B[1] * fN * scale,
+                posB[2] + n_B[2] * fN * scale,
+            )
+
+            # arrow for normal force
+            pb.addUserDebugLine(start, end, lineColorRGB=color, lifeTime=life, lineWidth=3)
+
+            # label force magnitude
+            # pb.addUserDebugText(f"{fN:.0f}N", end, textColorRGB=color, lifeTime=life, textSize=1.2)
