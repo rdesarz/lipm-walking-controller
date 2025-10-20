@@ -133,9 +133,6 @@ if __name__ == "__main__":
         simulator.apply_position_to_robot(q_des)
         simulator.step()
 
-    # We start the walking phase
-    k = 0
-
     lf_initial_pose = oMf_lf_tgt.translation
     rf_initial_pose = oMf_rf_tgt.translation
 
@@ -156,10 +153,8 @@ if __name__ == "__main__":
         [zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)]
     )
 
-    # state for smoothing
-    target = np.zeros(3)
-
-    while k < len(phases):
+    # We start the walking phase
+    for k, _ in enumerate(phases):
         q = simulator.get_q(talos.model.nq)
 
         zmp_ref_horizon = zmp_padded[k + 1 : k + ctrler_params.n_preview_steps]
@@ -209,7 +204,6 @@ if __name__ == "__main__":
         simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
 
         simulator.step()
-        k += 1
 
     # Infinite loop to display the ending position
     while True:
