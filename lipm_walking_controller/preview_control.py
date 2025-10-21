@@ -5,7 +5,7 @@ import numpy as np
 from scipy.linalg import solve_discrete_are
 
 
-def compute_zmp_ref(t, com_initial_pose, steps, ss_t, ds_t, t_init):
+def compute_zmp_ref(t, com_initial_pose, steps, ss_t, ds_t, t_init, t_final):
     T = len(t)
     zmp_ref = np.zeros([T, 2])
 
@@ -15,7 +15,7 @@ def compute_zmp_ref(t, com_initial_pose, steps, ss_t, ds_t, t_init):
     zmp_ref[mask, :] = (1 - alpha)[:, None] * com_initial_pose + alpha[:, None] * steps[0]
 
     # Alternate between foot
-    for idx, (current_step, next_step) in enumerate(zip(steps[:-1], steps[1:])):
+    for idx, (current_step, next_step) in enumerate(zip(steps[:-2], steps[1:-1])):
         # Compute current time range
         t_start = t_init + idx * (ss_t + ds_t)
 
@@ -27,9 +27,15 @@ def compute_zmp_ref(t, com_initial_pose, steps, ss_t, ds_t, t_init):
         alpha = (t[mask] - (t_start + ss_t)) / ds_t
         zmp_ref[mask, :] = (1 - alpha)[:, None] * current_step + alpha[:, None] * next_step
 
-    # Last phase is single support at last foot pose
-    mask = t >= t_init + (len(steps) - 1) * (ss_t + ds_t)
-    zmp_ref[mask, :] = steps[-1]
+    # Last phase is first a single support phase then a double support phase to put the ZMP between both feet
+    t_start = t_init + (len(steps) - 2) * (ss_t + ds_t)
+    zmp_ref[(t >= t_start) & (t < t_start + ss_t)] = steps[-2]
+
+    mask = (t >= t_start + ss_t) & (t < t_start + ss_t + t_final)
+    alpha = (t[mask] - (t_start + ss_t)) / t_final
+    zmp_ref[mask, :] = (1 - alpha)[:, None] * steps[-2] + alpha[:, None] * (
+        steps[-1] + steps[-2]
+    ) / 2.0
 
     return zmp_ref
 

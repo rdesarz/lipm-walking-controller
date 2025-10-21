@@ -72,7 +72,16 @@ def get_active_polygon(t: float, steps_pose, t_ss: float, t_ds: float, foot_shap
 
 
 def compute_feet_path_and_poses(
-    rf_initial_pose, lf_initial_pose, n_steps, t_ss, t_ds, t_init, l_stride, dt, max_height_foot
+    rf_initial_pose,
+    lf_initial_pose,
+    n_steps,
+    t_ss,
+    t_ds,
+    t_init,
+    t_final,
+    l_stride,
+    dt,
+    max_height_foot,
 ):
     # The sequence is the following:
     # Start with a double support phase to switch CoM on right foot
@@ -82,7 +91,7 @@ def compute_feet_path_and_poses(
     # the same level and a double support step to  place the CoM in the
     # middle of the feet
 
-    total_time = t_init + (n_steps + 1) * (t_ss + t_ds)
+    total_time = t_init + n_steps * (t_ss + t_ds) + (t_ss + t_final)
     N = int(total_time / dt)
     t = np.arange(N) * dt
 

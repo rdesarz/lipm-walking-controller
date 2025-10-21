@@ -19,9 +19,10 @@ if __name__ == "__main__":
     t_preview = 1.6  # Time horizon used for the preview controller
 
     # ZMP reference parameters
-    t_ss = 0.7  # Single support phase time window
-    t_ds = 0.8  # Double support phase time window
+    t_ss = 0.6  # Single support phase time window
+    t_ds = 0.4  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
+    t_end = 1.0
     foot_shape = Polygon(((0.11, 0.05), (0.11, -0.05), (-0.11, -0.05), (-0.11, 0.05)))
     n_steps = 5
     l_stride = 0.3
@@ -39,11 +40,20 @@ if __name__ == "__main__":
 
     # Build ZMP reference to track
     t, lf_path, rf_path, steps_pose, phases = compute_feet_path_and_poses(
-        rf_initial_pose, lf_initial_pose, n_steps, t_ss, t_ds, 1.0, l_stride, dt, max_height_foot
+        rf_initial_pose,
+        lf_initial_pose,
+        n_steps,
+        t_ss,
+        t_ds,
+        t_init,
+        t_end,
+        l_stride,
+        dt,
+        max_height_foot,
     )
 
     # Build ZMP reference to track
-    zmp_ref = compute_zmp_ref(t, com_initial_pose, steps_pose, t_ss, t_ds, 1.0)
+    zmp_ref = compute_zmp_ref(t, com_initial_pose, steps_pose, t_ss, t_ds, t_init, 2.0)
 
     # Initialize controller
     ctrler_params = PreviewControllerParams(

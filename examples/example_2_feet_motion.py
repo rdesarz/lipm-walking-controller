@@ -5,11 +5,11 @@ from lipm_walking_controller.foot import compute_feet_path_and_poses
 
 if __name__ == "__main__":
     # Parameters
-    dt = 0.02  # Delta of time of the model simulation
+    dt = 0.005  # Delta of time of the model simulation
 
     # Foot generation parameters
-    t_ss = 1.0  # Single support phase time window
-    t_ds = 0.2  # Double support phase time window
+    t_ss = 0.7  # Single support phase time window
+    t_ds = 0.8  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
     lf_initial_pose = np.array([0.0, 0.1, 0.0])
     rf_initial_pose = np.array([0.0, -0.1, 0.0])
@@ -19,7 +19,16 @@ if __name__ == "__main__":
 
     # Build feet path and poses
     t, lf_path, rf_path, steps_pose, _ = compute_feet_path_and_poses(
-        rf_initial_pose, lf_initial_pose, n_steps, t_ss, t_ds, t_init, l_stride, dt, max_height_foot
+        rf_initial_pose,
+        lf_initial_pose,
+        n_steps,
+        t_ss,
+        t_ds,
+        t_init,
+        t_end,
+        l_stride,
+        dt,
+        max_height_foot,
     )
 
     # Figure

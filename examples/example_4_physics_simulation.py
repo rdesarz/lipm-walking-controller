@@ -38,6 +38,7 @@ if __name__ == "__main__":
     t_ss = 0.4  # Single support phase time window
     t_ds = 0.4  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
+    t_end = 1.0
     n_steps = 15  # Number of steps executed by the robot
     l_stride = 0.25  # Length of the stride
     max_height_foot = 0.02  # Maximal height of the swing foot
@@ -139,10 +140,19 @@ if __name__ == "__main__":
     rf_initial_pose = oMf_rf_tgt.translation
 
     t, lf_path, rf_path, steps_pose, phases = compute_feet_path_and_poses(
-        rf_initial_pose, lf_initial_pose, n_steps, t_ss, t_ds, t_init, l_stride, dt, max_height_foot
+        rf_initial_pose,
+        lf_initial_pose,
+        n_steps,
+        t_ss,
+        t_ds,
+        t_init,
+        t_end,
+        l_stride,
+        dt,
+        max_height_foot,
     )
 
-    zmp_ref = compute_zmp_ref(t, com_initial_target[0:2], steps_pose, t_ss, t_ds, t_init)
+    zmp_ref = compute_zmp_ref(t, com_initial_target[0:2], steps_pose, t_ss, t_ds, t_init, t_end)
 
     zmp_padded = np.vstack(
         [zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)]
