@@ -35,10 +35,11 @@ if __name__ == "__main__":
     t_preview = 1.6  # Time horizon used for the preview controller
 
     # ZMP reference parameters
-    t_ss = 0.7  # Single support phase time window
-    t_ds = 0.8  # Double support phase time window
+    t_ss = 0.4  # Single support phase time window
+    t_ds = 0.4  # Double support phase time window
+    t_init = 2.0  # Initialization phase (transition from still position to first step)
     n_steps = 15  # Number of steps executed by the robot
-    l_stride = 0.3  # Length of the stride
+    l_stride = 0.25  # Length of the stride
     max_height_foot = 0.02  # Maximal height of the swing foot
 
     ctrler_params = PreviewControllerParams(
@@ -138,17 +139,10 @@ if __name__ == "__main__":
     rf_initial_pose = oMf_rf_tgt.translation
 
     t, lf_path, rf_path, steps_pose, phases = compute_feet_path_and_poses(
-        rf_initial_pose,
-        lf_initial_pose,
-        n_steps,
-        t_ss,
-        t_ds,
-        l_stride,
-        dt,
-        max_height_foot,
+        rf_initial_pose, lf_initial_pose, n_steps, t_ss, t_ds, t_init, l_stride, dt, max_height_foot
     )
 
-    zmp_ref = compute_zmp_ref(t, com_initial_target[0:2], steps_pose, t_ss, t_ds)
+    zmp_ref = compute_zmp_ref(t, com_initial_target[0:2], steps_pose, t_ss, t_ds, t_init)
 
     zmp_padded = np.vstack(
         [zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)]
@@ -202,7 +196,7 @@ if __name__ == "__main__":
         simulator.apply_position_to_robot(q)
 
         # Uncomment to follow the center of mass of the robot
-        # simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
+        simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
 
         simulator.step()
 

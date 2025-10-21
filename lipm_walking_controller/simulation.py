@@ -134,6 +134,7 @@ class Simulator:
         self.map_joints = build_map_joints(self.robot, model)
 
         self.line = None
+        self.text = None
 
     def step(self):
         pb.stepSimulation()
@@ -178,21 +179,24 @@ class Simulator:
             mean_z += posB[2]
             total_force += fN
 
-        start = [mean_x / len(cps_all), mean_y / len(cps_all), mean_z / len(cps_all)]
-        end = (
-            start[0] + n_B[0] * total_force * scale,
-            start[1] + n_B[1] * total_force * scale,
-            start[2] + n_B[2] * total_force * scale,
-        )
-
-        # arrow for normal force
-        if self.line is None:
-            self.line = pb.addUserDebugLine(start, end, lineColorRGB=color, lineWidth=3)
-        else:
-            pb.addUserDebugLine(
-                start,
-                end,
-                lineColorRGB=color,
-                lineWidth=3,
-                replaceItemUniqueId=self.line,
+        if len(cps_all) is not 0:
+            start = [mean_x / len(cps_all), mean_y / len(cps_all), mean_z / len(cps_all)]
+            end = (
+                start[0] + n_B[0] * total_force * scale,
+                start[1] + n_B[1] * total_force * scale,
+                start[2] + n_B[2] * total_force * scale,
             )
+
+            # arrow for normal force
+            if self.line is None:
+                self.line = pb.addUserDebugLine(start, end, lineColorRGB=color, lineWidth=3)
+                # self.text = pb.addUserDebugText(f"{total_force} N", end)
+            else:
+                pb.addUserDebugLine(
+                    start,
+                    end,
+                    lineColorRGB=color,
+                    lineWidth=3,
+                    replaceItemUniqueId=self.line,
+                )
+                # pb.addUserDebugText(f"{total_force} N", end, replaceItemUniqueId=self.text)

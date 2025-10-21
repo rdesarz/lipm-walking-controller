@@ -22,9 +22,7 @@ def clamp_to_polygon(pnt: np.ndarray, poly: Polygon):
     return np.array([q.x, q.y])
 
 
-def compute_double_support_polygon(
-    foot_pose_a, foot_pose_b, foot_shape: shapely.Polygon
-):
+def compute_double_support_polygon(foot_pose_a, foot_pose_b, foot_shape: shapely.Polygon):
     """
     Return support polygon in double support phase. The polygon is the smallest convex hull
     that includes both feet polygon
@@ -33,9 +31,7 @@ def compute_double_support_polygon(
     :param foot_shape: shape of each foot. We expect both feet to have the same shape.
     :return: support polygon in double support phase
     """
-    curent_foot = affinity.translate(
-        foot_shape, xoff=foot_pose_a[0], yoff=foot_pose_a[1]
-    )
+    curent_foot = affinity.translate(foot_shape, xoff=foot_pose_a[0], yoff=foot_pose_a[1])
     next_foot = affinity.translate(foot_shape, xoff=foot_pose_b[0], yoff=foot_pose_b[1])
 
     return union(curent_foot, next_foot).convex_hull
@@ -51,9 +47,7 @@ def compute_single_support_polygon(foot_pose, foot_shape: shapely.Polygon):
     return affinity.translate(foot_shape, xoff=foot_pose[0], yoff=foot_pose[1])
 
 
-def get_active_polygon(
-    t: float, steps_pose, t_ss: float, t_ds: float, foot_shape: shapely.Polygon
-):
+def get_active_polygon(t: float, steps_pose, t_ss: float, t_ds: float, foot_shape: shapely.Polygon):
     """
     Return the shape of the polygon
     :param k:
@@ -74,13 +68,11 @@ def get_active_polygon(
     elif t >= (len(steps_pose) - 1) * t_step:
         return compute_single_support_polygon(steps_pose[-1], foot_shape)
     else:
-        return compute_double_support_polygon(
-            steps_pose[i], steps_pose[i + 1], foot_shape
-        )
+        return compute_double_support_polygon(steps_pose[i], steps_pose[i + 1], foot_shape)
 
 
 def compute_feet_path_and_poses(
-    rf_initial_pose, lf_initial_pose, n_steps, t_ss, t_ds, l_stride, dt, max_height_foot
+    rf_initial_pose, lf_initial_pose, n_steps, t_ss, t_ds, t_init, l_stride, dt, max_height_foot
 ):
     # The sequence is the following:
     # Start with a double support phase to switch CoM on right foot
@@ -90,7 +82,7 @@ def compute_feet_path_and_poses(
     # the same level and a double support step to  place the CoM in the
     # middle of the feet
 
-    total_time = t_ds + (n_steps + 1) * (t_ss + t_ds)
+    total_time = t_init + (n_steps + 1) * (t_ss + t_ds)
     N = int(total_time / dt)
     t = np.arange(N) * dt
 
@@ -100,7 +92,7 @@ def compute_feet_path_and_poses(
     phases = np.ones(N)
 
     # Switch of the CoM to the right foot implies both feet stays at the same position
-    mask = t < t_ds
+    mask = t < t_init
     rf_path[mask, :] = rf_initial_pose
     lf_path[mask, :] = lf_initial_pose
 
@@ -116,10 +108,10 @@ def compute_feet_path_and_poses(
 
     # Compute motion of left foot
     for k in range(0, n_steps, 2):
-        t_begin = t_ds + k * (t_ss + t_ds)
-        t_end = t_ds + k * (t_ss + t_ds) + t_ss
+        t_begin = t_init + k * (t_ss + t_ds)
+        t_end = t_init + k * (t_ss + t_ds) + t_ss
         mask = (t >= t_begin) & (t < t_end)
-        sub_time = t[mask] - (t_ds + k * (t_ss + t_ds))
+        sub_time = t[mask] - (t_init + k * (t_ss + t_ds))
 
         # Compute motion on z-axis
         theta = sub_time * math.pi / t_ss
@@ -129,27 +121,23 @@ def compute_feet_path_and_poses(
         # Compute motion on x-axis
         if k == 0:
             alpha = sub_time / t_ss
-            lf_path[mask, 0] = (1 - alpha) * lf_initial_pose[0] + alpha * steps_pose[
-                k + 1
-            ][0]
+            lf_path[mask, 0] = (1 - alpha) * lf_initial_pose[0] + alpha * steps_pose[k + 1][0]
         else:
             alpha = sub_time / t_ss
-            lf_path[mask, 0] = (1 - alpha) * steps_pose[k - 1][0] + alpha * steps_pose[
-                k + 1
-            ][0]
+            lf_path[mask, 0] = (1 - alpha) * steps_pose[k - 1][0] + alpha * steps_pose[k + 1][0]
 
         # # Add constant part till the next step
-        t_begin = t_ds + k * (t_ss + t_ds) + t_ss
+        t_begin = t_init + k * (t_ss + t_ds) + t_ss
         t_end = total_time
         mask = (t >= t_begin) & (t < t_end)
         lf_path[mask, 0] = steps_pose[k + 1][0]
 
     # Compute motion of right foot
     for k in range(1, n_steps + 1, 2):
-        t_begin = t_ds + k * (t_ss + t_ds)
-        t_end = t_ds + k * (t_ss + t_ds) + t_ss
+        t_begin = t_init + k * (t_ss + t_ds)
+        t_end = t_init + k * (t_ss + t_ds) + t_ss
         mask = (t > t_begin) & (t < t_end)
-        sub_time = t[mask] - (t_ds + k * (t_ss + t_ds))
+        sub_time = t[mask] - (t_init + k * (t_ss + t_ds))
 
         # Compute motion on z-axis
         theta = sub_time * math.pi / t_ss
@@ -159,17 +147,13 @@ def compute_feet_path_and_poses(
         # Compute motion on x-axis
         if k == 1:
             alpha = sub_time / t_ss
-            rf_path[mask, 0] = (1 - alpha) * rf_initial_pose[0] + alpha * steps_pose[
-                k + 1
-            ][0]
+            rf_path[mask, 0] = (1 - alpha) * rf_initial_pose[0] + alpha * steps_pose[k + 1][0]
         else:
             alpha = sub_time / t_ss
-            rf_path[mask, 0] = (1 - alpha) * steps_pose[k - 1][0] + alpha * steps_pose[
-                k + 1
-            ][0]
+            rf_path[mask, 0] = (1 - alpha) * steps_pose[k - 1][0] + alpha * steps_pose[k + 1][0]
 
         # # Add constant part till the next step
-        t_begin = t_ds + k * (t_ss + t_ds) + t_ss
+        t_begin = t_init + k * (t_ss + t_ds) + t_ss
         t_end = total_time
         mask = (t >= t_begin) & (t < t_end)
         rf_path[mask, 0] = steps_pose[k + 1][0]
