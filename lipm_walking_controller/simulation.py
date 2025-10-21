@@ -200,3 +200,32 @@ class Simulator:
                     replaceItemUniqueId=self.line,
                 )
                 # pb.addUserDebugText(f"{total_force} N", end, replaceItemUniqueId=self.text)
+
+    def get_robot_com_position(self):
+        # base (link index = -1)
+        base_pos, base_orn = pb.getBasePositionAndOrientation(self.robot)
+        dyn_info = pb.getDynamicsInfo(self.robot, -1)
+        m_base = dyn_info[0]
+
+        # base COM in world = base frame + inertial offset rotated
+        # get base inertial offset from getDynamicsInfo (items 3–6)
+        base_inertial_pos = dyn_info[3]
+        base_inertial_orn = dyn_info[4]
+
+        base_inertial_world = pb.multiplyTransforms(
+            base_pos, base_orn, base_inertial_pos, base_inertial_orn
+        )[0]
+
+        m_total = m_base
+        com_sum = m_base * np.array(base_inertial_world)
+
+        # each articulated link
+        for link_idx in range(pb.getNumJoints(self.robot)):
+            # get COM position of the link directly in world
+            state = pb.getLinkState(self.robot, link_idx, computeForwardKinematics=True)
+            link_com_world = np.array(state[0])  # COM position in world
+            m_link = pb.getDynamicsInfo(self.robot, link_idx)[0]
+            com_sum += m_link * link_com_world
+            m_total += m_link
+
+        return (com_sum / m_total).tolist()

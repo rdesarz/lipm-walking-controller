@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pybullet as pb
 import pinocchio as pin
+from matplotlib import pyplot as plt
 
 from lipm_walking_controller.foot import compute_feet_path_and_poses
 
@@ -31,18 +32,17 @@ if __name__ == "__main__":
 
     dt = 1.0 / 250.0
 
-    # Preview controller parameters
-    t_preview = 1.6  # Time horizon used for the preview controller
-
     # ZMP reference parameters
-    t_ss = 0.4  # Single support phase time window
-    t_ds = 0.4  # Double support phase time window
+    t_ss = 0.8  # Single support phase time window
+    t_ds = 0.8  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
     t_end = 1.0
     n_steps = 15  # Number of steps executed by the robot
     l_stride = 0.25  # Length of the stride
     max_height_foot = 0.02  # Maximal height of the swing foot
 
+    # Preview controller parameters
+    t_preview = 1.6  # Time horizon used for the preview controller
     ctrler_params = PreviewControllerParams(
         zc=0.8,
         g=9.81,
@@ -53,11 +53,11 @@ if __name__ == "__main__":
     )
     ctrler_mat = compute_preview_control_matrices(ctrler_params, dt)
 
-    # Load pinocchio model of Talos
+    # Initialize Talos pinocchio model
     talos = Talos(path_to_model=args.path_talos_data.expanduser(), reduced=False)
     q = talos.set_and_get_default_pose()
 
-    # Initialize simulation
+    # Initialize simulator
     simulator = Simulator(dt, args.path_talos_data.expanduser(), talos)
 
     # Compute the right and left foot position as well as the base initial position
@@ -158,6 +158,10 @@ if __name__ == "__main__":
         [zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)]
     )
 
+    com_pins = np.zeros((len(phases), 3))
+    com_refs = np.zeros((len(phases), 3))
+    com_position = np.zeros((len(phases), 3))
+
     # We start the walking phase
     for k, _ in enumerate(phases):
         q = simulator.get_q(talos.model.nq)
@@ -203,6 +207,14 @@ if __name__ == "__main__":
             )
             q = q_new
 
+        pin.forwardKinematics(talos.model, talos.data, q)
+        pin.updateFramePlacements(talos.model, talos.data)
+        pin.computeCentroidalMap(talos.model, talos.data, q)
+        com_pin = pin.centerOfMass(talos.model, talos.data, q)
+
+        com_pins[k] = com_pin
+        print(com_pin)
+
         simulator.apply_position_to_robot(q)
 
         # Uncomment to follow the center of mass of the robot
@@ -212,6 +224,17 @@ if __name__ == "__main__":
 
         # Uncomment to draw contact forces
         simulator.draw_contact_forces(color=(0, 1, 0))
+
+        com_refs[k] = com_target
+        real_com = simulator.get_robot_com_position()
+        com_position[k, 0] = real_com[0]
+        com_position[k, 1] = real_com[1]
+        com_position[k, 2] = real_com[2]
+
+    plt.plot(com_position[:, 0], com_position[:, 1])
+    plt.plot(com_refs[:, 0], com_refs[:, 1])
+    plt.plot(com_pins[:, 0], com_pins[:, 1])
+    plt.show()
 
     # Infinite loop to display the ending position
     while True:
