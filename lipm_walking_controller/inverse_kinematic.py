@@ -99,13 +99,13 @@ def solve_inverse_kinematics(
     J_torso = S @ J_torso6
 
     # Handle locked joints and remove them from the optimization problem.
+    I = np.eye(nv)
     if params.locked_joints is not None:
         for joint_idx in params.locked_joints:
             J_torso[:, joint_idx] = np.zeros(J_torso.shape[0])
             Jcom[:, joint_idx] = np.zeros(Jcom.shape[0])
             J_mf[:, joint_idx] = np.zeros(J_mf.shape[0])
             J_ff[:, joint_idx] = np.zeros(J_ff.shape[0])
-            I = np.eye(nv)
             I[:, joint_idx] = np.zeros(I.shape[0])
 
     # -------- Quadratic cost --------

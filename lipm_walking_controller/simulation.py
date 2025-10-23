@@ -50,12 +50,19 @@ def compute_base_from_foot_target(model, data, q, foot_frame_id, oMf_target):
 
 def reset_pybullet_from_q(robot, q, map_joint_idx_to_q_idx):
     # base
-    base_pos = q[:3]
-    base_quat = q[3:7]  # xyzw expected by PyBullet
-    pb.resetBasePositionAndOrientation(robot, base_pos, base_quat)
+    p_base = list(q[:3])
+    q_base = list(q[3:7])
+
+    # Inertial (CoM) pose relative to base_link
+    _, _, _, p_li, q_li, *_ = pb.getDynamicsInfo(robot, -1)
+
+    # World pose of CoM/inertial frame
+    p_com, q_com = pb.multiplyTransforms(p_base, q_base, p_li, q_li)
+
+    pb.resetBasePositionAndOrientation(robot, p_com, q_com)
+
     # joints
     for j_id, q_id in map_joint_idx_to_q_idx.items():
-        name = pb.getJointInfo(robot, j_id)[1]
         if q_id >= 0:
             val = float(q[q_id])
             pb.resetJointState(robot, j_id, val)
@@ -83,8 +90,16 @@ def reset_position(robot, q_des, j_to_q_idx):
 
 def get_q_from_pybullet(robot, nq, map_joint_idx_to_q_idx):
     q = np.zeros(nq)
-    base_pos, base_quat = pb.getBasePositionAndOrientation(robot)
-    q[:7] = np.concatenate([base_pos, base_quat])  # base position + orientation
+    com_pos, com_quat = pb.getBasePositionAndOrientation(robot)
+
+    # Inertial (CoM) pose relative to base_link
+    _, _, _, p_li, q_li, *_ = pb.getDynamicsInfo(robot, -1)
+    p_ib, q_ib = pb.invertTransform(p_li, q_li)  # inertial_T_base
+
+    # World pose of CoM/inertial frame
+    p_base, q_base = pb.multiplyTransforms(com_pos, com_quat, p_ib, q_ib)
+
+    q[:7] = np.concatenate([p_base, q_base])  # base position + orientation
 
     for j_id, q_id in map_joint_idx_to_q_idx.items():
         if q_id < 0:  # skip fixed joints
@@ -103,6 +118,16 @@ def build_map_joints(robot, model):
             map_joint_idx_to_q_idx[j] = jid
 
     return map_joint_idx_to_q_idx
+
+
+def link_index(body_id, link_name):
+    n = pb.getNumJoints(body_id)
+    for i in range(n):
+        name = pb.getJointInfo(body_id, i)[12].decode()
+        if name == link_name:  # joint/link name
+            return i
+
+    return None
 
 
 class Simulator:
@@ -135,6 +160,7 @@ class Simulator:
 
         self.line = None
         self.text = None
+        self.point = None
 
     def step(self):
         pb.stepSimulation()
@@ -201,6 +227,12 @@ class Simulator:
                 )
                 # pb.addUserDebugText(f"{total_force} N", end, replaceItemUniqueId=self.text)
 
+    def draw_point(self, points, colors):
+        if self.point is None:
+            self.point = pb.addUserDebugPoints(points, colors, pointSize=30.0)
+        else:
+            pb.addUserDebugPoints(points, colors, pointSize=2.0, replaceItemUniqueId=self.point)
+
     def get_robot_com_position(self):
         # base (link index = -1)
         base_pos, base_orn = pb.getBasePositionAndOrientation(self.robot)
@@ -229,3 +261,13 @@ class Simulator:
             m_total += m_link
 
         return (com_sum / m_total).tolist()
+
+    def get_robot_pos(self):
+        return pb.getBasePositionAndOrientation(self.robot)
+
+    def get_robot_frame_pos(self, frame_name: str):
+        # Link/world poses
+        i = link_index(self.robot, frame_name)  # example
+        state = pb.getLinkState(self.robot, i, computeForwardKinematics=1)
+
+        return state[4], state[5]

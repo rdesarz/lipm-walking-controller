@@ -30,6 +30,8 @@ if __name__ == "__main__":
     p.add_argument("--path-talos-data", type=Path, help="Path to talos_data root")
     args = p.parse_args()
 
+    np.set_printoptions(suppress=True, precision=3)
+
     dt = 1.0 / 250.0
 
     # ZMP reference parameters
@@ -44,7 +46,7 @@ if __name__ == "__main__":
     # Preview controller parameters
     t_preview = 1.6  # Time horizon used for the preview controller
     ctrler_params = PreviewControllerParams(
-        zc=0.8,
+        zc=0.89,
         g=9.81,
         Qe=1.0,
         Qx=np.zeros((3, 3)),
@@ -63,7 +65,7 @@ if __name__ == "__main__":
     # Compute the right and left foot position as well as the base initial position
     oMf_rf0 = talos.data.oMf[talos.right_foot_id].copy()
     oMf_lf0 = talos.data.oMf[talos.left_foot_id].copy()
-    oMf_lf_tgt, oMf_rf_tgt = snap_feet_to_plane(oMf_lf0, oMf_rf0, z_offset=-0.075, keep_yaw=True)
+    oMf_lf_tgt, oMf_rf_tgt = snap_feet_to_plane(oMf_lf0, oMf_rf0)
 
     oMf_torso = talos.data.oMf[talos.torso_id].copy()
     oMb_init = compute_base_from_foot_target(
@@ -213,7 +215,6 @@ if __name__ == "__main__":
         com_pin = pin.centerOfMass(talos.model, talos.data, q)
 
         com_pins[k] = com_pin
-        print(com_pin)
 
         simulator.apply_position_to_robot(q)
 
