@@ -18,6 +18,7 @@ class InvKinSolverParams:
     w_torso: float
     w_com: float
     w_mf: float
+    w_ff: float
     mu: float
     dt: float
     locked_joints: typing.Optional[typing.List[int]] = None
@@ -55,82 +56,86 @@ def solve_inverse_kinematics(
     oMf_torso,
     params: InvKinSolverParams,
 ):
-    pin.forwardKinematics(params.model, params.data, q)
-    pin.updateFramePlacements(params.model, params.data)
+    model, data = params.model, params.data
 
-    nv = params.model.nv
+    # ---------- Kinematics ----------
+    pin.forwardKinematics(model, data, q)
+    pin.updateFramePlacements(model, data)
+    nv = model.nv
 
-    # -------- CoM task (Euclidean) --------
-    pin.computeCentroidalMap(params.model, params.data, q)
-    com = pin.centerOfMass(params.model, params.data, q)
-    Jcom = pin.jacobianCenterOfMass(params.model, params.data, q)  # (3,nv)
+    # ---------- Build locked velocity-index set ----------
+    locked_v_idx = set()
+    if params.locked_joints:
+        # Accept either Pinocchio joint IDs or direct velocity indices.
+        for j in params.locked_joints:
+            if 0 <= j < model.njoints:
+                i0 = model.idx_vs[j]
+                i1 = model.idx_vs[j + 1] if j + 1 < model.njoints else nv
+                locked_v_idx.update(range(i0, i1))
+            elif 0 <= j < nv:
+                locked_v_idx.add(j)
+            else:
+                raise ValueError(f"locked joint/index {j} out of range")
+    active_idx = np.array(sorted(set(range(nv)) - locked_v_idx), dtype=int)
+
+    def red(M):
+        return M[:, active_idx] if M is not None else None
+
+    # ---------- Tasks ----------
+    # CoM
+    pin.computeCentroidalMap(model, data, q)
+    com = pin.centerOfMass(model, data, q)
+    Jcom = pin.jacobianCenterOfMass(model, data, q)
     e_com = com_target - com
 
-    # -------- Fixed-foot hard contact (6D) --------
-    # Drive residual to zero at velocity level: J_ff * dq = -Kc * e_ff
+    # Fixed foot
     e_ff, J_ff = se3_task_error_and_jacobian(
-        params.model,
-        params.data,
-        q,
-        params.fixed_foot_frame,
-        oMf_fixed_foot,
+        model, data, q, params.fixed_foot_frame, oMf_fixed_foot
     )
 
-    # -------- Moving-foot soft pose task (6D) --------
+    # Moving foot
     e_mf, J_mf = se3_task_error_and_jacobian(
-        params.model, params.data, q, params.moving_foot_frame, oMf_moving_foot
+        model, data, q, params.moving_foot_frame, oMf_moving_foot
     )
 
-    # -------- Torso roll/pitch soft task --------
-    # Select angular part of e_torso and corresponding Jacobian rows
-    e_torso6, J_torso6 = se3_task_error_and_jacobian(
-        params.model,
-        params.data,
-        q,
-        params.torso_frame,
-        # keep current yaw: project desired as same yaw in world
-        oMf_torso,
-    )
+    # Torso (only angular part)
+    e_torso6, J_torso6 = se3_task_error_and_jacobian(model, data, q, params.torso_frame, oMf_torso)
     S = np.zeros((3, 6))
-    S[0, 3] = 1.0
-    S[1, 4] = 1.0
-    S[2, 5] = 1.0
+    S[0, 3] = S[1, 4] = S[2, 5] = 1.0
     e_torso = S @ e_torso6
     J_torso = S @ J_torso6
 
-    # Handle locked joints and remove them from the optimization problem.
-    I = np.eye(nv)
-    if params.locked_joints is not None:
-        for joint_idx in params.locked_joints:
-            J_torso[:, joint_idx] = np.zeros(J_torso.shape[0])
-            Jcom[:, joint_idx] = np.zeros(Jcom.shape[0])
-            J_mf[:, joint_idx] = np.zeros(J_mf.shape[0])
-            J_ff[:, joint_idx] = np.zeros(J_ff.shape[0])
-            I[:, joint_idx] = np.zeros(I.shape[0])
+    # ---------- Reduce Jacobians to active DoFs ----------
+    Jcom_r = red(Jcom)
+    J_ff_r = red(J_ff)
+    J_mf_r = red(J_mf)
+    J_torso_r = red(J_torso)
+    nav = active_idx.size
 
-    # -------- Quadratic cost --------
+    # ---------- Quadratic cost on reduced variables dq_r ----------
     H = (
-        (Jcom.T @ (np.eye(3) * params.w_com) @ Jcom)
-        + (J_torso.T @ (np.eye(3) * params.w_torso) @ J_torso)
-        + (J_mf.T @ (np.eye(6) * params.w_mf) @ J_mf)
-        + np.eye(nv) * params.mu
+        (Jcom_r.T @ (np.eye(3) * params.w_com) @ Jcom_r)
+        + (J_torso_r.T @ (np.eye(3) * params.w_torso) @ J_torso_r)
+        + (J_mf_r.T @ (np.eye(6) * params.w_mf) @ J_mf_r)
+        + (J_ff_r.T @ (np.eye(6) * params.w_ff) @ J_ff_r)
+        + np.eye(nav) * params.mu
     )
-
     g = (
-        (-Jcom.T @ (np.eye(3) * params.w_com) @ e_com)
-        - (J_torso.T @ (np.eye(3) * params.w_torso) @ e_torso)
-        - (J_mf.T @ (np.eye(6) * params.w_mf) @ e_mf)
+        (-Jcom_r.T @ (np.eye(3) * params.w_com) @ e_com)
+        + (-J_torso_r.T @ (np.eye(3) * params.w_torso) @ e_torso)
+        + (-J_mf_r.T @ (np.eye(6) * params.w_mf) @ e_mf)
+        + (-J_ff_r.T @ (np.eye(6) * params.w_ff) @ e_ff)
     )
 
-    # Symmetrization of the cost matrix
-    H = 0.5 * (H + H.T)
+    H = 0.5 * (H + H.T)  # symmetrize
 
-    # Use equality constraint for the position of the fixed foot
-    A_eq = J_ff
-    b_eq = e_ff
+    # ---------- Solve reduced QP ----------
+    dq_r = solve_qp(P=H, q=g, solver="osqp")  # soft contact via w_ff
 
-    dq = solve_qp(P=H, q=g, A=A_eq, b=b_eq, solver="osqp")
+    # ---------- Lift back to full dq ----------
+    dq = np.zeros(nv)
+    dq[active_idx] = dq_r
 
-    q_next = pin.integrate(params.model, q, dq)
+    q_next = pin.integrate(model, q, dq)
 
     return q_next, dq
