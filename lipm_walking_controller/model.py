@@ -50,7 +50,7 @@ class Talos:
         # We build a reduced model by locking the specificied joints if needed
         self.reduced = reduced
         if self.reduced:
-            joints_to_lock = list(range(14, 45))
+            joints_to_lock = self.get_locked_joints_idx()
             self.model, self.geom = pin.buildReducedModel(
                 full_model, full_col_model, joints_to_lock, q
             )
@@ -114,4 +114,4 @@ class Talos:
         return self.model.joints[jid].idx_q if jid < n_joints else None
 
     def get_locked_joints_idx(self):
-        return range(18, 50)
+        return range(14, 46)

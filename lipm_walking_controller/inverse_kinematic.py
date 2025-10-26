@@ -18,7 +18,6 @@ class InvKinSolverParams:
     w_torso: float
     w_com: float
     w_mf: float
-    w_ff: float
     mu: float
     dt: float
     locked_joints: typing.Optional[typing.List[int]] = None
@@ -81,7 +80,6 @@ def solve_inverse_kinematics(
     def red(M):
         return M[:, active_idx] if M is not None else None
 
-    # ---------- Tasks ----------
     # CoM
     pin.computeCentroidalMap(model, data, q)
     com = pin.centerOfMass(model, data, q)
@@ -105,34 +103,31 @@ def solve_inverse_kinematics(
     e_torso = S @ e_torso6
     J_torso = S @ J_torso6
 
-    # ---------- Reduce Jacobians to active DoFs ----------
     Jcom_r = red(Jcom)
     J_ff_r = red(J_ff)
     J_mf_r = red(J_mf)
     J_torso_r = red(J_torso)
     nav = active_idx.size
 
-    # ---------- Quadratic cost on reduced variables dq_r ----------
+    Aeq = J_ff_r
+    beq = e_ff
+
     H = (
         (Jcom_r.T @ (np.eye(3) * params.w_com) @ Jcom_r)
         + (J_torso_r.T @ (np.eye(3) * params.w_torso) @ J_torso_r)
         + (J_mf_r.T @ (np.eye(6) * params.w_mf) @ J_mf_r)
-        + (J_ff_r.T @ (np.eye(6) * params.w_ff) @ J_ff_r)
         + np.eye(nav) * params.mu
     )
     g = (
         (-Jcom_r.T @ (np.eye(3) * params.w_com) @ e_com)
         + (-J_torso_r.T @ (np.eye(3) * params.w_torso) @ e_torso)
         + (-J_mf_r.T @ (np.eye(6) * params.w_mf) @ e_mf)
-        + (-J_ff_r.T @ (np.eye(6) * params.w_ff) @ e_ff)
     )
 
     H = 0.5 * (H + H.T)  # symmetrize
 
-    # ---------- Solve reduced QP ----------
-    dq_r = solve_qp(P=H, q=g, solver="osqp")  # soft contact via w_ff
+    dq_r = solve_qp(P=H, q=g, A=Aeq, b=beq, solver="osqp")
 
-    # ---------- Lift back to full dq ----------
     dq = np.zeros(nv)
     dq[active_idx] = dq_r
 
