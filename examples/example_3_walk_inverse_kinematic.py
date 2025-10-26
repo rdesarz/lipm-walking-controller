@@ -76,7 +76,7 @@ if __name__ == "__main__":
         2.0,
         l_stride,
         dt,
-        max_height_foott_end,
+        max_height_foot,
     )
 
     zmp_ref = compute_zmp_ref(t, com_initial_pose[0:2], steps_pose, t_ss, t_ds, t_init, t_end)
