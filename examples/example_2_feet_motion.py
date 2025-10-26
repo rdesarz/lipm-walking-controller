@@ -11,6 +11,7 @@ if __name__ == "__main__":
     t_ss = 0.7  # Single support phase time window
     t_ds = 0.8  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
+    t_end = 2.0
     lf_initial_pose = np.array([0.0, 0.1, 0.0])
     rf_initial_pose = np.array([0.0, -0.1, 0.0])
     n_steps = 5

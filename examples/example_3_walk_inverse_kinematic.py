@@ -37,9 +37,10 @@ if __name__ == "__main__":
     t_ss = 2.0  # Single support phase time window
     t_ds = 1.0  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
+    t_end = 2.0
     n_steps = 25
-    l_stride = 0.3
-    max_height_foot = 0.05
+    l_stride = 0.2
+    max_height_foot = 0.02
 
     ctrler_params = PreviewControllerParams(
         zc=0.89,
@@ -73,7 +74,7 @@ if __name__ == "__main__":
         t_ss,
         t_ds,
         t_init,
-        2.0,
+        t_end,
         l_stride,
         dt,
         max_height_foot,

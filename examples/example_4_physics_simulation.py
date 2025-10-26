@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 from lipm_walking_controller.foot import compute_feet_path_and_poses
 
 from lipm_walking_controller.inverse_kinematic import InvKinSolverParams, solve_inverse_kinematics
+from lipm_walking_controller.plot import plot_feet_and_com
 
 from lipm_walking_controller.preview_control import (
     PreviewControllerParams,
@@ -259,30 +260,19 @@ if __name__ == "__main__":
             lf_pb[k] = pos
 
     if args.plot_results:
-        fig, axes = plt.subplots(3, layout="constrained", figsize=(12, 8))
-
-        axes[0].plot(t, lf_position[:, 0])
-        axes[0].plot(t, lf_refs[:, 0])
-        axes[0].plot(t, rf_position[:, 0])
-        axes[0].plot(t, rf_refs[:, 0])
-        axes[0].plot(t, rf_pb[:, 0])
-        axes[0].plot(t, lf_pb[:, 0])
-
-        axes[1].plot(t, lf_position[:, 2])
-        axes[1].plot(t, lf_refs[:, 2])
-        axes[1].plot(t, rf_position[:, 2])
-        axes[1].plot(t, rf_refs[:, 2])
-        axes[1].plot(t, rf_pb[:, 2])
-        axes[1].plot(t, lf_pb[:, 2])
-
-        axes[2].plot(t, lf_position[:, 1])
-        axes[2].plot(t, lf_refs[:, 1])
-        axes[2].plot(t, rf_position[:, 1])
-        axes[2].plot(t, rf_refs[:, 1])
-        axes[2].plot(t, rf_pb[:, 1])
-        axes[2].plot(t, lf_pb[:, 1])
-
-        plt.show()
+        plot_feet_and_com(
+            t,
+            lf_position,
+            rf_position,
+            lf_refs,
+            rf_refs,
+            lf_pb,
+            rf_pb,
+            com_position,
+            com_refs,
+            com_pins,
+            title_prefix="Talos walking",
+        )
 
     # Infinite loop to display the ending position
     while True:

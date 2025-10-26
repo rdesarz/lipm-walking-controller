@@ -7,9 +7,7 @@ from lipm_walking_controller.foot import (
 def plot_steps(axes, steps_pose, step_shape):
     # Plot double support polygon
     for current_step, next_step in zip(steps_pose[:-1], steps_pose[1:]):
-        support_polygon = compute_double_support_polygon(
-            current_step, next_step, step_shape
-        )
+        support_polygon = compute_double_support_polygon(current_step, next_step, step_shape)
 
         x, y = support_polygon.exterior.xy
         axes.plot(x, y, color="blue")  # outline
@@ -22,3 +20,154 @@ def plot_steps(axes, steps_pose, step_shape):
         x, y = support_polygon.exterior.xy
         axes.plot(x, y, color="red")  # outline
         axes.fill(x, y, color="red", alpha=0.5)  # filled polygon
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+def _trim_to_min_len(arrs):
+    n = min(a.shape[0] for a in arrs)
+    return [a[:n] for a in arrs]
+
+
+def _finite_mask(*arrs):
+    mask = np.isfinite(arrs[0]).all(axis=1)
+    for a in arrs[1:]:
+        mask &= np.isfinite(a).all(axis=1)
+    return mask
+
+
+def plot_feet_and_com(
+    t,
+    lf_position,
+    rf_position,
+    lf_refs,
+    rf_refs,
+    lf_pb,
+    rf_pb,
+    com_position,
+    com_refs,
+    com_pins,
+    title_prefix="Feet and CoM",
+):
+    # Trim to common length
+    (
+        t,
+        lf_position,
+        rf_position,
+        lf_refs,
+        rf_refs,
+        lf_pb,
+        rf_pb,
+        com_position,
+        com_refs,
+        com_pins,
+    ) = _trim_to_min_len(
+        [
+            t,
+            lf_position,
+            rf_position,
+            lf_refs,
+            rf_refs,
+            lf_pb,
+            rf_pb,
+            com_position,
+            com_refs,
+            com_pins,
+        ]
+    )
+
+    # Drop NaNs/Infs consistently
+    mask = np.isfinite(t) & _finite_mask(
+        lf_position, rf_position, lf_refs, rf_refs, lf_pb, rf_pb, com_position, com_refs, com_pins
+    )
+    t = t[mask]
+    lf_position = lf_position[mask]
+    rf_position = rf_position[mask]
+    lf_refs = lf_refs[mask]
+    rf_refs = rf_refs[mask]
+    lf_pb = lf_pb[mask]
+    rf_pb = rf_pb[mask]
+    com_position = com_position[mask]
+    com_refs = com_refs[mask]
+    com_pins = com_pins[mask]
+
+    # -------- Time plots (x,z,y in meters) --------
+    fig, axes = plt.subplots(3, sharex=True, layout="constrained", figsize=(12, 8))
+
+    series = [
+        ("LF pin", lf_position),
+        ("LF ref", lf_refs),
+        ("LF pb", lf_pb),
+        ("RF pin", rf_position),
+        ("RF ref", rf_refs),
+        ("RF pb", rf_pb),
+        ("CoM pin", com_pins),
+        ("CoM ref", com_refs),
+        ("CoM pyb", com_position),
+    ]
+    coord_labels = ["x [m]", "z [m]", "y [m]"]
+    coord_idx = [0, 2, 1]  # match your original order
+
+    linestyles = {
+        "pin": "-",
+        "ref": "--",
+        "pb": ":",
+        "pyb": ":",
+    }
+
+    for ax, j in zip(axes, coord_idx):
+        for name, arr in series:
+            # Pick linestyle by source keyword in label
+            key = (
+                "ref"
+                if "ref" in name.lower()
+                else ("pb" if "pb" in name.lower() or "pyb" in name.lower() else "pin")
+            )
+            ax.plot(t, arr[:, j], linestyle=linestyles[key], label=name)
+        ax.set_ylabel(coord_labels[coord_idx.index(j)])
+        ax.grid(True)
+
+    axes[-1].set_xlabel("t [s]")
+
+    # One combined legend outside
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncols=5, frameon=False)
+    fig.suptitle(f"{title_prefix} — time profiles")
+
+    # -------- Plan view (x vs y) --------
+    fig2, ax2 = plt.subplots(1, layout="constrained", figsize=(10, 8))
+
+    def traj2d(arr):  # drop last 2 samples as in your code
+        if arr.shape[0] > 2:
+            return arr[:-2, 0], arr[:-2, 1]
+        return arr[:, 0], arr[:, 1]
+
+    for name, arr in [
+        ("LF pin", lf_position),
+        ("LF ref", lf_refs),
+        ("LF pb", lf_pb),
+        ("RF pin", rf_position),
+        ("RF ref", rf_refs),
+        ("RF pb", rf_pb),
+        ("CoM ref", com_refs),
+        ("CoM pin", com_pins),
+        ("CoM pyb", com_position),
+    ]:
+        x, y = traj2d(arr)
+        key = (
+            "ref"
+            if "ref" in name.lower()
+            else ("pb" if "pb" in name.lower() or "pyb" in name.lower() else "pin")
+        )
+        ax2.plot(x, y, linestyle=linestyles[key], label=name)
+
+    ax2.set_xlabel("x [m]")
+    ax2.set_ylabel("y [m]")
+    ax2.set_aspect("equal", adjustable="box")
+    ax2.grid(True)
+    ax2.legend(loc="upper center", ncols=4, frameon=False)
+    ax2.set_title(f"{title_prefix} — plan view (x–y)")
+
+    plt.show()
