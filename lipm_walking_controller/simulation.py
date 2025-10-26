@@ -75,8 +75,34 @@ def apply_position(robot, q_des, j_to_q_idx):
             j_id,
             pb.POSITION_CONTROL,
             targetPosition=q_des[q_id],
-            targetVelocity=0.0,
             positionGain=0.4,
+            force=1000,
+        )
+
+
+def build_bullet_to_pin_vmap(robot, model):
+    name_to_bullet = {}
+    for jid in range(pb.getNumJoints(robot)):
+        jn, jtype = pb.getJointInfo(robot, jid)[1].decode(), pb.getJointInfo(robot, jid)[2]
+        if jtype != pb.JOINT_FIXED:
+            name_to_bullet[jn] = jid
+    j_to_v_idx = {}
+    for j in range(1, model.njoints):  # 0 = universe
+        if model.joints[j].nv == 0:
+            continue
+        jname = model.names[j]
+        if jname in name_to_bullet:
+            j_to_v_idx[name_to_bullet[jname]] = model.idx_vs[j]  # velocity start index
+    return j_to_v_idx
+
+
+def apply_velocity(robot, v_des, j_to_q_idx):
+    for j_id, q_id in j_to_q_idx.items():
+        pb.setJointMotorControl2(
+            robot,
+            j_id,
+            pb.VELOCITY_CONTROL,
+            targetVelocity=v_des[q_id],
             velocityGain=1.0,
             force=200,
         )
@@ -156,6 +182,8 @@ class Simulator:
             flags=pb.URDF_MERGE_FIXED_LINKS,
         )
 
+        self.vel_map = build_bullet_to_pin_vmap(self.robot, model.model)
+
         self.map_joints = build_map_joints(self.robot, model)
 
         self.line = None
@@ -170,6 +198,9 @@ class Simulator:
 
     def apply_position_to_robot(self, q):
         apply_position(robot=self.robot, q_des=q, j_to_q_idx=self.map_joints)
+
+    def apply_velocity_to_robot(self, v):
+        apply_velocity(robot=self.robot, v_des=v, j_to_q_idx=self.vel_map)
 
     def get_q(self, nq):
         return get_q_from_pybullet(self.robot, nq, self.map_joints)
@@ -229,9 +260,9 @@ class Simulator:
 
     def draw_point(self, points, colors):
         if self.point is None:
-            self.point = pb.addUserDebugPoints(points, colors, pointSize=30.0)
+            self.point = pb.addUserDebugPoints(points, colors, pointSize=5.0)
         else:
-            pb.addUserDebugPoints(points, colors, pointSize=2.0, replaceItemUniqueId=self.point)
+            pb.addUserDebugPoints(points, colors, pointSize=5.0, replaceItemUniqueId=self.point)
 
     def get_robot_com_position(self):
         # base (link index = -1)
