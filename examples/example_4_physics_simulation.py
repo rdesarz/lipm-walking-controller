@@ -1,6 +1,7 @@
 import math
 import argparse
 from pathlib import Path
+from time import sleep
 
 import numpy as np
 import pybullet as pb
@@ -17,7 +18,7 @@ from lipm_walking_controller.preview_control import (
     update_control,
     compute_zmp_ref,
 )
-from lipm_walking_controller.model import Talos, q_from_base_and_joints
+from lipm_walking_controller.model import Talos, q_from_base_and_joints, print_frames
 
 from lipm_walking_controller.simulation import (
     snap_feet_to_plane,
@@ -28,6 +29,7 @@ from lipm_walking_controller.simulation import (
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--path-talos-data", type=Path, help="Path to talos_data root")
+    p.add_argument("--plot-results", action="store_true")
     args = p.parse_args()
 
     np.set_printoptions(suppress=True, precision=3)
@@ -39,7 +41,7 @@ if __name__ == "__main__":
     t_ds = 0.8  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
     t_end = 1.0
-    n_steps = 15  # Number of steps executed by the robot
+    n_steps = 5  # Number of steps executed by the robot
     l_stride = 0.25  # Length of the stride
     max_height_foot = 0.02  # Maximal height of the swing foot
 
@@ -136,7 +138,6 @@ if __name__ == "__main__":
 
         simulator.apply_position_to_robot(q_des)
         simulator.step()
-        simulator.draw_contact_forces(color=(0, 1, 0))
 
     lf_initial_pose = oMf_lf_tgt.translation
     rf_initial_pose = oMf_rf_tgt.translation
@@ -164,8 +165,16 @@ if __name__ == "__main__":
     com_refs = np.zeros((len(phases), 3))
     com_position = np.zeros((len(phases), 3))
 
+    lf_refs = np.zeros((len(phases), 3))
+    lf_position = np.zeros((len(phases), 3))
+    lf_pb = np.zeros((len(phases), 3))
+
+    rf_refs = np.zeros((len(phases), 3))
+    rf_position = np.zeros((len(phases), 3))
+    rf_pb = np.zeros((len(phases), 3))
+
     # We start the walking phase
-    for k, _ in enumerate(phases):
+    for k, _ in enumerate(phases[:-2]):
         q = simulator.get_q(talos.model.nq)
 
         zmp_ref_horizon = zmp_padded[k + 1 : k + ctrler_params.n_preview_steps]
@@ -183,7 +192,6 @@ if __name__ == "__main__":
             ik_sol_params.moving_foot_frame = talos.left_foot_id
 
             oMf_lf = pin.SE3(oMf_lf_tgt.rotation, lf_path[k])
-            oMf_lf_tgt = oMf_lf
             q_new, dq = solve_inverse_kinematics(
                 q,
                 com_target,
@@ -193,12 +201,17 @@ if __name__ == "__main__":
                 params=ik_sol_params,
             )
             q = q_new
+
+            pin.forwardKinematics(talos.model, talos.data, q)
+            pin.updateFramePlacements(talos.model, talos.data)
+
+            oMf_lf_tgt = pin.SE3(oMf_lf_tgt.rotation, lf_path[k + 1])
+
         else:
             ik_sol_params.fixed_foot_frame = talos.left_foot_id
             ik_sol_params.moving_foot_frame = talos.right_foot_id
 
             oMf_rf = pin.SE3(oMf_rf_tgt.rotation, rf_path[k])
-            oMf_rf_tgt = oMf_rf
             q_new, dq = solve_inverse_kinematics(
                 q,
                 com_target,
@@ -209,33 +222,67 @@ if __name__ == "__main__":
             )
             q = q_new
 
-        pin.forwardKinematics(talos.model, talos.data, q)
-        pin.updateFramePlacements(talos.model, talos.data)
-        pin.computeCentroidalMap(talos.model, talos.data, q)
-        com_pin = pin.centerOfMass(talos.model, talos.data, q)
+            pin.forwardKinematics(talos.model, talos.data, q)
+            pin.updateFramePlacements(talos.model, talos.data)
 
-        com_pins[k] = com_pin
+            oMf_rf_tgt = pin.SE3(oMf_rf_tgt.rotation, rf_path[k + 1])
 
         simulator.apply_position_to_robot(q)
 
         # Uncomment to follow the center of mass of the robot
-        simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
+        # simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
 
         simulator.step()
 
-        # Uncomment to draw contact forces
-        simulator.draw_contact_forces(color=(0, 1, 0))
+        if args.plot_results:
+            pin.computeCentroidalMap(talos.model, talos.data, q)
+            com_pin = pin.centerOfMass(talos.model, talos.data, q)
 
-        com_refs[k] = com_target
-        real_com = simulator.get_robot_com_position()
-        com_position[k, 0] = real_com[0]
-        com_position[k, 1] = real_com[1]
-        com_position[k, 2] = real_com[2]
+            com_pins[k] = com_pin
 
-    plt.plot(com_position[:, 0], com_position[:, 1])
-    plt.plot(com_refs[:, 0], com_refs[:, 1])
-    plt.plot(com_pins[:, 0], com_pins[:, 1])
-    plt.show()
+            com_refs[k] = com_target
+            real_com = simulator.get_robot_com_position()
+            com_position[k, 0] = real_com[0]
+            com_position[k, 1] = real_com[1]
+            com_position[k, 2] = real_com[2]
+
+            lf_position[k] = talos.data.oMf[talos.left_foot_id].translation
+            lf_refs[k] = lf_path[k]
+
+            rf_position[k] = talos.data.oMf[talos.right_foot_id].translation
+            rf_refs[k] = rf_path[k]
+
+            pos, quat = simulator.get_robot_frame_pos("leg_right_6_link")
+            rf_pb[k] = pos
+
+            pos, quat = simulator.get_robot_frame_pos("leg_left_6_link")
+            lf_pb[k] = pos
+
+    if args.plot_results:
+        fig, axes = plt.subplots(3, layout="constrained", figsize=(12, 8))
+
+        axes[0].plot(t, lf_position[:, 0])
+        axes[0].plot(t, lf_refs[:, 0])
+        axes[0].plot(t, rf_position[:, 0])
+        axes[0].plot(t, rf_refs[:, 0])
+        axes[0].plot(t, rf_pb[:, 0])
+        axes[0].plot(t, lf_pb[:, 0])
+
+        axes[1].plot(t, lf_position[:, 2])
+        axes[1].plot(t, lf_refs[:, 2])
+        axes[1].plot(t, rf_position[:, 2])
+        axes[1].plot(t, rf_refs[:, 2])
+        axes[1].plot(t, rf_pb[:, 2])
+        axes[1].plot(t, lf_pb[:, 2])
+
+        axes[2].plot(t, lf_position[:, 1])
+        axes[2].plot(t, lf_refs[:, 1])
+        axes[2].plot(t, rf_position[:, 1])
+        axes[2].plot(t, rf_refs[:, 1])
+        axes[2].plot(t, rf_pb[:, 1])
+        axes[2].plot(t, lf_pb[:, 1])
+
+        plt.show()
 
     # Infinite loop to display the ending position
     while True:
