@@ -115,7 +115,7 @@ if __name__ == "__main__":
     x_k = np.array([0.0, com_initial_target[0], 0.0, 0.0], dtype=float)
     y_k = np.array([0.0, com_initial_target[1], 0.0, 0.0], dtype=float)
 
-    for _ in range(math.ceil(2.0 / dt)):
+    for _ in range(math.ceil(3.0 / dt)):
         q = simulator.get_q(talos.model.nq)
 
         # # Get zmp ref horizon
