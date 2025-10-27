@@ -46,9 +46,9 @@ def plot_feet_and_com(
     rf_refs,
     lf_pb,
     rf_pb,
-    com_position,
-    com_refs,
-    com_pins,
+    com_ref_pos,
+    com_pb_pos,
+    com_pin_pos,
     title_prefix="Feet and CoM",
 ):
     # Trim to common length
@@ -60,9 +60,9 @@ def plot_feet_and_com(
         rf_refs,
         lf_pb,
         rf_pb,
-        com_position,
-        com_refs,
-        com_pins,
+        com_ref_pos,
+        com_pb_pos,
+        com_pin_pos,
     ) = _trim_to_min_len(
         [
             t,
@@ -72,15 +72,23 @@ def plot_feet_and_com(
             rf_refs,
             lf_pb,
             rf_pb,
-            com_position,
-            com_refs,
-            com_pins,
+            com_ref_pos,
+            com_pb_pos,
+            com_pin_pos,
         ]
     )
 
     # Drop NaNs/Infs consistently
     mask = np.isfinite(t) & _finite_mask(
-        lf_position, rf_position, lf_refs, rf_refs, lf_pb, rf_pb, com_position, com_refs, com_pins
+        lf_position,
+        rf_position,
+        lf_refs,
+        rf_refs,
+        lf_pb,
+        rf_pb,
+        com_ref_pos,
+        com_pb_pos,
+        com_pin_pos,
     )
     t = t[mask]
     lf_position = lf_position[mask]
@@ -89,9 +97,9 @@ def plot_feet_and_com(
     rf_refs = rf_refs[mask]
     lf_pb = lf_pb[mask]
     rf_pb = rf_pb[mask]
-    com_position = com_position[mask]
-    com_refs = com_refs[mask]
-    com_pins = com_pins[mask]
+    com_ref_pos = com_ref_pos[mask]
+    com_pb_pos = com_pb_pos[mask]
+    com_pin_pos = com_pin_pos[mask]
 
     # -------- Time plots (x,z,y in meters) --------
     fig, axes = plt.subplots(3, sharex=True, layout="constrained", figsize=(12, 8))
@@ -103,9 +111,9 @@ def plot_feet_and_com(
         ("RF pin", rf_position),
         ("RF ref", rf_refs),
         ("RF pb", rf_pb),
-        ("CoM pin", com_pins),
-        ("CoM ref", com_refs),
-        ("CoM pyb", com_position),
+        ("CoM pin", com_pin_pos),
+        ("CoM pb", com_pb_pos),
+        ("CoM ref", com_ref_pos),
     ]
     coord_labels = ["x [m]", "z [m]", "y [m]"]
     coord_idx = [0, 2, 1]  # match your original order
@@ -113,18 +121,13 @@ def plot_feet_and_com(
     linestyles = {
         "pin": "-",
         "ref": "--",
-        "pb": ":",
-        "pyb": ":",
+        "pb": "-",
     }
 
     for ax, j in zip(axes, coord_idx):
         for name, arr in series:
             # Pick linestyle by source keyword in label
-            key = (
-                "ref"
-                if "ref" in name.lower()
-                else ("pb" if "pb" in name.lower() or "pyb" in name.lower() else "pin")
-            )
+            key = "ref" if "ref" in name.lower() else ("pb" if "pb" in name.lower() else "pin")
             ax.plot(t, arr[:, j], linestyle=linestyles[key], label=name)
         ax.set_ylabel(coord_labels[coord_idx.index(j)])
         ax.grid(True)
@@ -137,7 +140,7 @@ def plot_feet_and_com(
     fig.suptitle(f"{title_prefix} — time profiles")
 
     # -------- Plan view (x vs y) --------
-    fig2, ax2 = plt.subplots(1, layout="constrained", figsize=(10, 8))
+    fig2, ax2 = plt.subplots(1, figsize=(10, 8))
 
     def traj2d(arr):  # drop last 2 samples as in your code
         if arr.shape[0] > 2:
@@ -145,29 +148,26 @@ def plot_feet_and_com(
         return arr[:, 0], arr[:, 1]
 
     for name, arr in [
-        ("LF pin", lf_position),
-        ("LF ref", lf_refs),
-        ("LF pb", lf_pb),
-        ("RF pin", rf_position),
-        ("RF ref", rf_refs),
-        ("RF pb", rf_pb),
-        ("CoM ref", com_refs),
-        ("CoM pin", com_pins),
-        ("CoM pyb", com_position),
+        ("LF pos (Pinocchio)", lf_position),
+        ("LF pos (reference)", lf_refs),
+        ("LF pos (PyBullet)", lf_pb),
+        ("RF pos (Pinocchio)", rf_position),
+        ("RF pos (reference)", rf_refs),
+        ("RF pos (PyBullet)", rf_pb),
+        ("CoM pos (Pinocchio)", com_pin_pos),
+        ("CoM pos (reference)", com_ref_pos),
+        ("CoM pos (PyBullet)", com_pb_pos),
     ]:
         x, y = traj2d(arr)
-        key = (
-            "ref"
-            if "ref" in name.lower()
-            else ("pb" if "pb" in name.lower() or "pyb" in name.lower() else "pin")
-        )
+        key = "ref" if "ref" in name.lower() else ("pb" if "pb" in name.lower() else "pin")
         ax2.plot(x, y, linestyle=linestyles[key], label=name)
 
     ax2.set_xlabel("x [m]")
     ax2.set_ylabel("y [m]")
-    ax2.set_aspect("equal", adjustable="box")
+    ax2.set_aspect("equal")
     ax2.grid(True)
-    ax2.legend(loc="upper center", ncols=4, frameon=False)
+    ax2.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+    fig2.tight_layout()
     ax2.set_title(f"{title_prefix} — plan view (x–y)")
 
     plt.show()

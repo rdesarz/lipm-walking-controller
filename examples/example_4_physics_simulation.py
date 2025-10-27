@@ -43,7 +43,7 @@ if __name__ == "__main__":
     t_ds = 0.8  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
     t_end = 1.0
-    n_steps = 5  # Number of steps executed by the robot
+    n_steps = 1  # Number of steps executed by the robot
     l_stride = 0.25  # Length of the stride
     max_height_foot = 0.02  # Maximal height of the swing foot
 
@@ -267,8 +267,8 @@ if __name__ == "__main__":
             rf_ref_pos,
             lf_pb_pos,
             rf_pb_pos,
-            com_pb_pos,
             com_ref_pos,
+            com_pb_pos,
             com_pin_pos,
             title_prefix="Talos walking",
         )
