@@ -64,7 +64,12 @@ if __name__ == "__main__":
     q = talos.set_and_get_default_pose()
 
     # Initialize simulator
-    simulator = Simulator(dt, args.path_talos_data.expanduser(), talos, launch_gui=args.launch_gui)
+    simulator = Simulator(
+        dt=dt,
+        path_to_model=args.path_talos_data.expanduser(),
+        model=talos,
+        launch_gui=args.launch_gui,
+    )
 
     # Compute the right and left foot position as well as the base initial position
     oMf_rf0 = talos.data.oMf[talos.right_foot_id].copy()
@@ -163,17 +168,17 @@ if __name__ == "__main__":
         [zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)]
     )
 
-    com_pins = np.zeros((len(phases), 3))
-    com_refs = np.zeros((len(phases), 3))
-    com_position = np.zeros((len(phases), 3))
+    com_pin_pos = np.zeros((len(phases), 3))
+    com_ref_pos = np.zeros((len(phases), 3))
+    com_pb_pos = np.zeros((len(phases), 3))
 
-    lf_refs = np.zeros((len(phases), 3))
-    lf_position = np.zeros((len(phases), 3))
-    lf_pb = np.zeros((len(phases), 3))
+    lf_ref_pos = np.zeros((len(phases), 3))
+    lf_pin_pos = np.zeros((len(phases), 3))
+    lf_pb_pos = np.zeros((len(phases), 3))
 
-    rf_refs = np.zeros((len(phases), 3))
-    rf_position = np.zeros((len(phases), 3))
-    rf_pb = np.zeros((len(phases), 3))
+    rf_ref_pos = np.zeros((len(phases), 3))
+    rf_pin_pos = np.zeros((len(phases), 3))
+    rf_pb_pos = np.zeros((len(phases), 3))
 
     # We start the walking phase
     for k, _ in enumerate(phases[:-2]):
@@ -240,38 +245,31 @@ if __name__ == "__main__":
             pin.computeCentroidalMap(talos.model, talos.data, q)
             com_pin = pin.centerOfMass(talos.model, talos.data, q)
 
-            com_pins[k] = com_pin
+            # Store position of CoM, left and right feet
+            com_ref_pos[k] = com_target
+            com_pin_pos[k] = com_pin
+            com_pb_pos[k] = simulator.get_robot_com_position()
 
-            com_refs[k] = com_target
-            real_com = simulator.get_robot_com_position()
-            com_position[k, 0] = real_com[0]
-            com_position[k, 1] = real_com[1]
-            com_position[k, 2] = real_com[2]
+            lf_ref_pos[k] = lf_path[k]
+            lf_pin_pos[k] = talos.data.oMf[talos.left_foot_id].translation
+            lf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_left_6_link")
 
-            lf_position[k] = talos.data.oMf[talos.left_foot_id].translation
-            lf_refs[k] = lf_path[k]
-
-            rf_position[k] = talos.data.oMf[talos.right_foot_id].translation
-            rf_refs[k] = rf_path[k]
-
-            pos, quat = simulator.get_robot_frame_pos("leg_right_6_link")
-            rf_pb[k] = pos
-
-            pos, quat = simulator.get_robot_frame_pos("leg_left_6_link")
-            lf_pb[k] = pos
+            rf_ref_pos[k] = rf_path[k]
+            rf_pin_pos[k] = talos.data.oMf[talos.right_foot_id].translation
+            rf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_right_6_link")
 
     if args.plot_results:
         plot_feet_and_com(
             t,
-            lf_position,
-            rf_position,
-            lf_refs,
-            rf_refs,
-            lf_pb,
-            rf_pb,
-            com_position,
-            com_refs,
-            com_pins,
+            lf_pin_pos,
+            rf_pin_pos,
+            lf_ref_pos,
+            rf_ref_pos,
+            lf_pb_pos,
+            rf_pb_pos,
+            com_pb_pos,
+            com_ref_pos,
+            com_pin_pos,
             title_prefix="Talos walking",
         )
 
