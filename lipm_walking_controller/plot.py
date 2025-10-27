@@ -164,7 +164,6 @@ def plot_feet_and_com(
 
     ax2.set_xlabel("x [m]")
     ax2.set_ylabel("y [m]")
-    ax2.set_aspect("equal")
     ax2.grid(True)
     ax2.legend(loc="center left", bbox_to_anchor=(1, 0.5))
     fig2.tight_layout()

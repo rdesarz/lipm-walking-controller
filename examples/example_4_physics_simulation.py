@@ -43,7 +43,7 @@ if __name__ == "__main__":
     t_ds = 0.8  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
     t_end = 1.0
-    n_steps = 1  # Number of steps executed by the robot
+    n_steps = 11  # Number of steps executed by the robot
     l_stride = 0.25  # Length of the stride
     max_height_foot = 0.02  # Maximal height of the swing foot
 
@@ -98,7 +98,7 @@ if __name__ == "__main__":
         w_mf=100.0,
         mu=1e-4,
         dt=dt,
-        locked_joints=talos.get_locked_joints_idx(),
+        locked_joints=list(talos.get_locked_joints_idx()),
     )
     q_des, dq = solve_inverse_kinematics(
         q, com_initial_target, oMf_lf_tgt, oMf_rf_tgt, oMf_torso, ik_sol_params
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     x_k = np.array([0.0, com_initial_target[0], 0.0, 0.0], dtype=float)
     y_k = np.array([0.0, com_initial_target[1], 0.0, 0.0], dtype=float)
 
-    for _ in range(math.ceil(3.0 / dt)):
+    for _ in range(math.ceil(1.0 / dt)):
         q = simulator.get_q(talos.model.nq)
 
         # # Get zmp ref horizon
@@ -143,7 +143,8 @@ if __name__ == "__main__":
         # Uncomment to follow the center of mass of the robot
         simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
 
-        simulator.apply_position_to_robot(q_des)
+        # This step is only here to start with the right initial position. Therefore we perform a reset
+        simulator.reset_robot(q_des)
         simulator.step()
 
     lf_initial_pose = oMf_lf_tgt.translation
