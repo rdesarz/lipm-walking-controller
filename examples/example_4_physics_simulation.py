@@ -1,12 +1,10 @@
 import math
 import argparse
 from pathlib import Path
-from time import sleep
 
 import numpy as np
 import pybullet as pb
 import pinocchio as pin
-from matplotlib import pyplot as plt
 
 from lipm_walking_controller.foot import compute_feet_path_and_poses
 
