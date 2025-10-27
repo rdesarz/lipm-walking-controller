@@ -157,8 +157,11 @@ def link_index(body_id, link_name):
 
 
 class Simulator:
-    def __init__(self, dt, path_to_model: Path, model):
-        self.cid = pb.connect(pb.GUI, options="--window_title=PyBullet --width=1920 --height=1080")
+    def __init__(self, dt, path_to_model: Path, model, launch_gui=True):
+        self.cid = pb.connect(
+            pb.GUI if launch_gui else pb.DIRECT,
+            options="--window_title=PyBullet --width=1920 --height=1080",
+        )
         pb.setAdditionalSearchPath(pybullet_data.getDataPath())
         pb.setGravity(0, 0, -9.81)
         pb.setPhysicsEngineParameter(

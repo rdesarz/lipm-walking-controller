@@ -31,6 +31,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--path-talos-data", type=Path, help="Path to talos_data root")
     p.add_argument("--plot-results", action="store_true")
+    p.add_argument("--launch-gui", action="store_true")
     args = p.parse_args()
 
     np.set_printoptions(suppress=True, precision=3)
@@ -63,7 +64,7 @@ if __name__ == "__main__":
     q = talos.set_and_get_default_pose()
 
     # Initialize simulator
-    simulator = Simulator(dt, args.path_talos_data.expanduser(), talos)
+    simulator = Simulator(dt, args.path_talos_data.expanduser(), talos, launch_gui=args.launch_gui)
 
     # Compute the right and left foot position as well as the base initial position
     oMf_rf0 = talos.data.oMf[talos.right_foot_id].copy()
