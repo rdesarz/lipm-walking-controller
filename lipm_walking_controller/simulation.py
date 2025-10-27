@@ -70,13 +70,14 @@ def reset_pybullet_from_q(robot, q, map_joint_idx_to_q_idx):
 
 def apply_position(robot, q_des, j_to_q_idx):
     for j_id, q_id in j_to_q_idx.items():
+        joint_max = pb.getJointInfo(robot, j_id)[10]
         pb.setJointMotorControl2(
             robot,
             j_id,
             pb.POSITION_CONTROL,
             targetPosition=q_des[q_id],
             positionGain=0.4,
-            force=1000,
+            force=joint_max * 0.8,
         )
 
 
@@ -98,13 +99,14 @@ def build_bullet_to_pin_vmap(robot, model):
 
 def apply_velocity(robot, v_des, j_to_q_idx):
     for j_id, q_id in j_to_q_idx.items():
+        joint_max = pb.getJointInfo(robot, j_id)[10]
         pb.setJointMotorControl2(
             robot,
             j_id,
             pb.VELOCITY_CONTROL,
             targetVelocity=v_des[q_id],
             velocityGain=1.0,
-            force=200,
+            force=0.8 * joint_max,
         )
 
 
@@ -164,6 +166,8 @@ class Simulator:
         )
         pb.setAdditionalSearchPath(pybullet_data.getDataPath())
         pb.setGravity(0, 0, -9.81)
+        pb.setTimeStep(dt)
+        pb.setRealTimeSimulation(0)
         pb.setPhysicsEngineParameter(
             fixedTimeStep=dt,
             numSolverIterations=100,
@@ -175,6 +179,7 @@ class Simulator:
             contactERP=0.2,
             frictionERP=0.2,
         )
+
         self.plane = pb.loadURDF("plane.urdf")
         path_to_urdf = path_to_model / "talos_data" / "urdf" / "talos_full.urdf"
         self.robot = pb.loadURDF(
@@ -188,6 +193,11 @@ class Simulator:
         self.vel_map = build_bullet_to_pin_vmap(self.robot, model.model)
 
         self.map_joints = build_map_joints(self.robot, model)
+
+        for j in range(pb.getNumJoints(self.robot)):
+            pb.changeDynamics(
+                self.robot, j, lateralFriction=1.0, rollingFriction=0.0, spinningFriction=0.0
+            )
 
         self.line = None
         self.text = None
