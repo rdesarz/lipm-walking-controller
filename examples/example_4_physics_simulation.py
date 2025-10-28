@@ -260,15 +260,15 @@ if __name__ == "__main__":
     if args.plot_results:
         plot_feet_and_com(
             t,
-            lf_pin_pos,
-            rf_pin_pos,
-            lf_ref_pos,
-            rf_ref_pos,
-            lf_pb_pos,
-            rf_pb_pos,
-            com_ref_pos,
-            com_pb_pos,
-            com_pin_pos,
+            lf_pin_pos=lf_pin_pos,
+            rf_pin_pos=rf_pin_pos,
+            lf_ref_pos=lf_ref_pos,
+            rf_ref_pos=rf_ref_pos,
+            lf_pb_pos=lf_pb_pos,
+            rf_pb_pos=rf_pb_pos,
+            com_ref_pos=com_ref_pos,
+            com_pb_pos=com_pb_pos,
+            com_pin_pos=com_pin_pos,
             title_prefix="Talos walking",
         )
 
