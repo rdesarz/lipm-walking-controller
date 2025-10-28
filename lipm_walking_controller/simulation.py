@@ -15,7 +15,7 @@ def rotz(yaw):
     return np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
 
 
-def snap_feet_to_plane(oMf_lf, oMf_rf, z_offset=0.0, keep_yaw=True):
+def snap_feet_to_plane(oMf_lf, oMf_rf, z_offset=0.0, keep_yaw=False):
     yl, yr = yaw_of(oMf_lf.rotation), yaw_of(oMf_rf.rotation)
 
     Rl = rotz(yl) if keep_yaw else np.eye(3)
