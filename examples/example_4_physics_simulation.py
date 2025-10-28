@@ -42,8 +42,8 @@ if __name__ == "__main__":
     t_init = 2.0  # Initialization phase (transition from still position to first step)
     t_end = 1.0
     n_steps = 11  # Number of steps executed by the robot
-    l_stride = 0.25  # Length of the stride
-    max_height_foot = 0.02  # Maximal height of the swing foot
+    l_stride = 0.1  # Length of the stride
+    max_height_foot = 0.01  # Maximal height of the swing foot
 
     # Preview controller parameters
     t_preview = 1.6  # Time horizon used for the preview controller
