@@ -244,7 +244,7 @@ def main():
         simulator.apply_position_to_robot(q_des)
 
         # Uncomment to follow the center of mass of the robot
-        # simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
+        simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
 
         simulator.step()
 
