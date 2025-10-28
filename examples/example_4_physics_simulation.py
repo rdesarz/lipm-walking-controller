@@ -25,7 +25,7 @@ from lipm_walking_controller.simulation import (
     Simulator,
 )
 
-if __name__ == "__main__":
+def main():
     p = argparse.ArgumentParser()
     p.add_argument("--path-talos-data", type=Path, help="Path to talos_data root")
     p.add_argument("--plot-results", action="store_true")
@@ -181,7 +181,12 @@ if __name__ == "__main__":
 
     # We start the walking phase
     for k, _ in enumerate(phases[:-2]):
+        # Get the current configuration of the robot from the simulator
         q = simulator.get_q(talos.model.nq)
+
+        # Apply the configuration to the kinematic model
+        pin.forwardKinematics(talos.model, talos.data, q)
+        pin.updateFramePlacements(talos.model, talos.data)
 
         zmp_ref_horizon = zmp_padded[k + 1 : k + ctrler_params.n_preview_steps]
 
@@ -208,9 +213,6 @@ if __name__ == "__main__":
             )
             q = q_new
 
-            pin.forwardKinematics(talos.model, talos.data, q)
-            pin.updateFramePlacements(talos.model, talos.data)
-
             oMf_lf_tgt = pin.SE3(oMf_lf_tgt.rotation, lf_path[k + 1])
 
         else:
@@ -227,9 +229,6 @@ if __name__ == "__main__":
                 params=ik_sol_params,
             )
             q = q_new
-
-            pin.forwardKinematics(talos.model, talos.data, q)
-            pin.updateFramePlacements(talos.model, talos.data)
 
             oMf_rf_tgt = pin.SE3(oMf_rf_tgt.rotation, rf_path[k + 1])
 
@@ -275,3 +274,7 @@ if __name__ == "__main__":
     # Infinite loop to display the ending position
     while True:
         simulator.step()
+
+
+if __name__ == "__main__":
+    main()
