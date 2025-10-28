@@ -58,8 +58,6 @@ def solve_inverse_kinematics(
     model, data = params.model, params.data
 
     # ---------- Kinematics ----------
-    pin.forwardKinematics(model, data, q)
-    pin.updateFramePlacements(model, data)
     nv = model.nv
 
     # ---------- Build locked velocity-index set ----------

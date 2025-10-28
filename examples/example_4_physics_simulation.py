@@ -25,6 +25,7 @@ from lipm_walking_controller.simulation import (
     Simulator,
 )
 
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--path-talos-data", type=Path, help="Path to talos_data root")
@@ -59,7 +60,7 @@ def main():
 
     # Initialize Talos pinocchio model
     talos = Talos(path_to_model=args.path_talos_data.expanduser(), reduced=False)
-    q = talos.set_and_get_default_pose()
+    q_init = talos.set_and_get_default_pose()
 
     # Initialize simulator
     simulator = Simulator(
@@ -76,9 +77,13 @@ def main():
 
     oMf_torso = talos.data.oMf[talos.torso_id].copy()
     oMb_init = compute_base_from_foot_target(
-        talos.model, talos.data, q, talos.left_foot_id, oMf_lf_tgt
+        talos.model, talos.data, q_init, talos.left_foot_id, oMf_lf_tgt
     )
-    q = q_from_base_and_joints(q, oMb_init)
+
+    # Compute the required initial configuration and apply them to the kinematic model
+    q_init = q_from_base_and_joints(q_init, oMb_init)
+    pin.forwardKinematics(talos.model, talos.data, q_init)
+    pin.updateFramePlacements(talos.model, talos.data)
 
     # set initial CoM target centered between feet at height zc
     feet_mid = 0.5 * (oMf_lf_tgt.translation + oMf_rf_tgt.translation)
@@ -99,14 +104,14 @@ def main():
         locked_joints=list(talos.get_locked_joints_idx()),
     )
     q_des, dq = solve_inverse_kinematics(
-        q, com_initial_target, oMf_lf_tgt, oMf_rf_tgt, oMf_torso, ik_sol_params
+        q_init, com_initial_target, oMf_lf_tgt, oMf_rf_tgt, oMf_torso, ik_sol_params
     )
-    q = q_des
+    q_init = q_des
 
-    pin.forwardKinematics(talos.model, talos.data, q)
+    # Update kinematic model and simulator
+    pin.forwardKinematics(talos.model, talos.data, q_init)
     pin.updateFramePlacements(talos.model, talos.data)
-
-    simulator.reset_robot(q)
+    simulator.reset_robot(q_init)
 
     # First we hard reset the position of the robot and let the simulation run for a few iterations with 0 gravity to
     # stabilize the robot
@@ -121,7 +126,12 @@ def main():
     y_k = np.array([0.0, com_initial_target[1], 0.0, 0.0], dtype=float)
 
     for _ in range(math.ceil(1.0 / dt)):
-        q = simulator.get_q(talos.model.nq)
+        # Get the current configuration of the robot from the simulator
+        q_init = simulator.get_q(talos.model.nq)
+
+        # Apply the configuration to the kinematic model
+        pin.forwardKinematics(talos.model, talos.data, q_init)
+        pin.updateFramePlacements(talos.model, talos.data)
 
         # # Get zmp ref horizon
         zmp_ref_horizon = np.ones((ctrler_params.n_preview_steps - 1, 2)) * feet_mid[0:2]
@@ -135,7 +145,7 @@ def main():
 
         # Stabilize at the position
         q_des, dq = solve_inverse_kinematics(
-            q, com_target, oMf_lf_tgt, oMf_rf_tgt, oMf_torso, ik_sol_params
+            q_init, com_target, oMf_lf_tgt, oMf_rf_tgt, oMf_torso, ik_sol_params
         )
 
         # Uncomment to follow the center of mass of the robot
@@ -182,10 +192,10 @@ def main():
     # We start the walking phase
     for k, _ in enumerate(phases[:-2]):
         # Get the current configuration of the robot from the simulator
-        q = simulator.get_q(talos.model.nq)
+        q_init = simulator.get_q(talos.model.nq)
 
         # Apply the configuration to the kinematic model
-        pin.forwardKinematics(talos.model, talos.data, q)
+        pin.forwardKinematics(talos.model, talos.data, q_init)
         pin.updateFramePlacements(talos.model, talos.data)
 
         zmp_ref_horizon = zmp_padded[k + 1 : k + ctrler_params.n_preview_steps]
@@ -198,20 +208,20 @@ def main():
         com_target = np.array([x_k[1], y_k[1], ctrler_params.zc])
 
         # Alternate between feet
+        q_des = []
         if phases[k] < 0.0:
             ik_sol_params.fixed_foot_frame = talos.right_foot_id
             ik_sol_params.moving_foot_frame = talos.left_foot_id
 
             oMf_lf = pin.SE3(oMf_lf_tgt.rotation, lf_path[k])
-            q_new, dq = solve_inverse_kinematics(
-                q,
+            q_des, _ = solve_inverse_kinematics(
+                q_init,
                 com_target,
                 oMf_fixed_foot=oMf_rf_tgt,
                 oMf_moving_foot=oMf_lf,
                 oMf_torso=oMf_torso,
                 params=ik_sol_params,
             )
-            q = q_new
 
             oMf_lf_tgt = pin.SE3(oMf_lf_tgt.rotation, lf_path[k + 1])
 
@@ -220,19 +230,18 @@ def main():
             ik_sol_params.moving_foot_frame = talos.right_foot_id
 
             oMf_rf = pin.SE3(oMf_rf_tgt.rotation, rf_path[k])
-            q_new, dq = solve_inverse_kinematics(
-                q,
+            q_des, _ = solve_inverse_kinematics(
+                q_init,
                 com_target,
                 oMf_fixed_foot=oMf_lf_tgt,
                 oMf_moving_foot=oMf_rf,
                 oMf_torso=oMf_torso,
                 params=ik_sol_params,
             )
-            q = q_new
 
             oMf_rf_tgt = pin.SE3(oMf_rf_tgt.rotation, rf_path[k + 1])
 
-        simulator.apply_position_to_robot(q)
+        simulator.apply_position_to_robot(q_des)
 
         # Uncomment to follow the center of mass of the robot
         # simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
@@ -240,8 +249,8 @@ def main():
         simulator.step()
 
         if args.plot_results:
-            pin.computeCentroidalMap(talos.model, talos.data, q)
-            com_pin = pin.centerOfMass(talos.model, talos.data, q)
+            pin.computeCentroidalMap(talos.model, talos.data, q_init)
+            com_pin = pin.centerOfMass(talos.model, talos.data, q_init)
 
             # Store position of CoM, left and right feet
             com_ref_pos[k] = com_target
