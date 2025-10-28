@@ -40,12 +40,12 @@ def _finite_mask(*arrs):
 
 def plot_feet_and_com(
     t,
-    lf_position,
-    rf_position,
-    lf_refs,
-    rf_refs,
-    lf_pb,
-    rf_pb,
+    lf_pin_pos,
+    rf_pin_pos,
+    lf_ref_pos,
+    rf_ref_pos,
+    lf_pb_pos,
+    rf_pb_pos,
     com_ref_pos,
     com_pb_pos,
     com_pin_pos,
@@ -54,24 +54,24 @@ def plot_feet_and_com(
     # Trim to common length
     (
         t,
-        lf_position,
-        rf_position,
-        lf_refs,
-        rf_refs,
-        lf_pb,
-        rf_pb,
+        lf_pin_pos,
+        rf_pin_pos,
+        lf_ref_pos,
+        rf_ref_pos,
+        lf_pb_pos,
+        rf_pb_pos,
         com_ref_pos,
         com_pb_pos,
         com_pin_pos,
     ) = _trim_to_min_len(
         [
             t,
-            lf_position,
-            rf_position,
-            lf_refs,
-            rf_refs,
-            lf_pb,
-            rf_pb,
+            lf_pin_pos,
+            rf_pin_pos,
+            lf_ref_pos,
+            rf_ref_pos,
+            lf_pb_pos,
+            rf_pb_pos,
             com_ref_pos,
             com_pb_pos,
             com_pin_pos,
@@ -80,23 +80,23 @@ def plot_feet_and_com(
 
     # Drop NaNs/Infs consistently
     mask = np.isfinite(t) & _finite_mask(
-        lf_position,
-        rf_position,
-        lf_refs,
-        rf_refs,
-        lf_pb,
-        rf_pb,
+        lf_pin_pos,
+        rf_pin_pos,
+        lf_ref_pos,
+        rf_ref_pos,
+        lf_pb_pos,
+        rf_pb_pos,
         com_ref_pos,
         com_pb_pos,
         com_pin_pos,
     )
     t = t[mask]
-    lf_position = lf_position[mask]
-    rf_position = rf_position[mask]
-    lf_refs = lf_refs[mask]
-    rf_refs = rf_refs[mask]
-    lf_pb = lf_pb[mask]
-    rf_pb = rf_pb[mask]
+    lf_pin_pos = lf_pin_pos[mask]
+    rf_pin_pos = rf_pin_pos[mask]
+    lf_ref_pos = lf_ref_pos[mask]
+    rf_ref_pos = rf_ref_pos[mask]
+    lf_pb_pos = lf_pb_pos[mask]
+    rf_pb_pos = rf_pb_pos[mask]
     com_ref_pos = com_ref_pos[mask]
     com_pb_pos = com_pb_pos[mask]
     com_pin_pos = com_pin_pos[mask]
@@ -105,12 +105,12 @@ def plot_feet_and_com(
     fig, axes = plt.subplots(3, sharex=True, layout="constrained", figsize=(12, 8))
 
     series = [
-        ("LF pin", lf_position),
-        ("LF ref", lf_refs),
-        ("LF pb", lf_pb),
-        ("RF pin", rf_position),
-        ("RF ref", rf_refs),
-        ("RF pb", rf_pb),
+        ("LF pin", lf_pin_pos),
+        ("LF ref", lf_ref_pos),
+        ("LF pb", lf_pb_pos),
+        ("RF pin", rf_pin_pos),
+        ("RF ref", rf_ref_pos),
+        ("RF pb", rf_pb_pos),
         ("CoM pin", com_pin_pos),
         ("CoM pb", com_pb_pos),
         ("CoM ref", com_ref_pos),
@@ -148,12 +148,12 @@ def plot_feet_and_com(
         return arr[:, 0], arr[:, 1]
 
     for name, arr in [
-        ("LF pos (Pinocchio)", lf_position),
-        ("LF pos (reference)", lf_refs),
-        ("LF pos (PyBullet)", lf_pb),
-        ("RF pos (Pinocchio)", rf_position),
-        ("RF pos (reference)", rf_refs),
-        ("RF pos (PyBullet)", rf_pb),
+        ("LF pos (Pinocchio)", lf_pin_pos),
+        ("LF pos (reference)", lf_ref_pos),
+        ("LF pos (PyBullet)", lf_pb_pos),
+        ("RF pos (Pinocchio)", rf_pin_pos),
+        ("RF pos (reference)", rf_ref_pos),
+        ("RF pos (PyBullet)", rf_pb_pos),
         ("CoM pos (Pinocchio)", com_pin_pos),
         ("CoM pos (reference)", com_ref_pos),
         ("CoM pos (PyBullet)", com_pb_pos),
