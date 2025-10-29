@@ -29,7 +29,7 @@ def se3_task_error_and_jacobian(model, data, q, frame_id, M_des):
     iMd = oMi.actInv(M_des)  # ^i M_d  = oMi^{-1} * oMdes
     e6 = pin.log(iMd).vector  # right-invariant pose error in LOCAL frame
 
-    # Geometric Jacobian in LOCAL frame
+    # Compute frame jacobian in local reference frame
     Jb = pin.computeFrameJacobian(model, data, q, frame_id, pin.LOCAL)
 
     # Right Jacobian of the log map (Pinocchio’s Jlog6)
