@@ -139,7 +139,7 @@ def reset_pybullet_from_q(robot_id: int, q: np.ndarray, map_joint_idx_to_q_idx: 
             pb.resetJointState(robot_id, j_id, val)
 
 
-def apply_position(robot_id: int, q_des: np.ndarray, j_to_q_idx: Dict[int, int]):
+def apply_position_to_pybullet(robot_id: int, q_des: np.ndarray, j_to_q_idx: Dict[int, int]):
     """
     Apply position control to Bullet joints using desired joint positions.
 
@@ -193,7 +193,7 @@ def build_bullet_to_pin_vmap(robot_id, model):
     return j_to_v_idx
 
 
-def apply_velocity(robot_id, v_des, j_to_q_idx):
+def apply_velocity_to_pybullet(robot_id, v_des, j_to_q_idx):
     """
     Velocity control for Bullet joints using desired joint velocities.
 
@@ -354,11 +354,6 @@ class Simulator:
 
         self.map_joints = build_map_joints(self.robot, model)
 
-        for j in range(pb.getNumJoints(self.robot)):
-            pb.changeDynamics(
-                self.robot, j, lateralFriction=1.0, rollingFriction=0.0, spinningFriction=0.0
-            )
-
         self.line = None
         self.text = None
         self.point = None
@@ -366,19 +361,19 @@ class Simulator:
     def step(self):
         pb.stepSimulation()
 
-    def reset_robot(self, q):
+    def reset_robot(self, q: np.ndarray):
         reset_pybullet_from_q(self.robot, q, self.map_joints)
 
-    def apply_position_to_robot(self, q):
-        apply_position(robot_id=self.robot, q_des=q, j_to_q_idx=self.map_joints)
+    def apply_position_to_robot(self, q: np.ndarray):
+        apply_position_to_pybullet(robot_id=self.robot, q_des=q, j_to_q_idx=self.map_joints)
 
-    def apply_velocity_to_robot(self, v):
-        apply_velocity(robot=self.robot, v_des=v, j_to_q_idx=self.vel_map)
+    def apply_velocity_to_robot(self, v: np.ndarray):
+        apply_velocity_to_pybullet(robot_id=self.robot, v_des=v, j_to_q_idx=self.vel_map)
 
-    def get_q(self, nq):
+    def get_q(self, nq: int):
         return get_q_from_pybullet(self.robot, nq, self.map_joints)
 
-    def update_camera_to_follow_pos(self, x, y, z):
+    def update_camera_to_follow_pos(self, x: float, y: float, z: float):
         pb.resetDebugVisualizerCamera(
             cameraDistance=4.0,
             cameraYaw=50,
@@ -386,7 +381,7 @@ class Simulator:
             cameraTargetPosition=[x, y, z],
         )
 
-    def draw_contact_forces(self, color=(0, 1, 0), scale=0.002, life=0.2):
+    def draw_contact_forces(self, color=(0, 1, 0), scale=0.002):
         # iterate all foot links if you want per-foot colors
         cps_all = []
 
@@ -471,7 +466,7 @@ class Simulator:
 
     def get_robot_frame_pos(self, frame_name: str):
         # Link/world poses
-        i = link_index(self.robot, frame_name)  # example
+        i = link_index(self.robot, frame_name)
         state = pb.getLinkState(self.robot, i, computeForwardKinematics=1)
 
         return state[4], state[5]
