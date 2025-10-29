@@ -100,12 +100,6 @@ The figure below shows the generated trajectory for both foot with a height of 2
   <img src="img/feet_traj.png" alt="desc" width="460">
 </p>
 
-### Inverse Kinematics
-
-
-
-### Integration in PyBullet
-
 ---
 
 ## Features
