@@ -35,7 +35,7 @@ def main():
 
     np.set_printoptions(suppress=True, precision=3)
 
-    dt = 1.0 / 250.0
+    dt = 1.0 / 240.0
 
     # ZMP reference parameters
     t_ss = 0.8  # Single support phase time window
@@ -249,8 +249,6 @@ def main():
 
         simulator.step()
 
-        zmp_pos[k] = simulator.get_zmp_pose()
-
         if args.plot_results:
             pin.computeCentroidalMap(talos.model, talos.data, q_init)
             com_pin = pin.centerOfMass(talos.model, talos.data, q_init)
@@ -270,7 +268,8 @@ def main():
 
     if args.plot_results:
         plot_feet_and_com(
-            t,
+            title_prefix="Walking controller",
+            t=t,
             lf_pin_pos=lf_pin_pos,
             rf_pin_pos=rf_pin_pos,
             lf_ref_pos=lf_ref_pos,
@@ -281,7 +280,6 @@ def main():
             com_pb_pos=com_pb_pos,
             com_pin_pos=com_pin_pos,
             zmp_pos=zmp_pos,
-            title_prefix="Talos walking",
         )
 
     # Infinite loop to display the ending position

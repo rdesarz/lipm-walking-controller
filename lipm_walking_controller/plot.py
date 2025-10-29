@@ -146,7 +146,10 @@ def plot_feet_and_com(
     fig.suptitle(f"{title_prefix} — time profiles")
 
     # -------- Plan view (x vs y) --------
-    fig2, ax2 = plt.subplots(1, figsize=(10, 8))
+    plt.rcParams.update({"font.size": 14})
+
+    fig2, ax2 = plt.subplots(1, figsize=(12, 8), layout="constrained")
+    fig2.canvas.manager.set_window_title(f"{title_prefix} — plan view (x–y)")
 
     def traj2d(arr):  # drop last 2 samples as in your code
         if arr.shape[0] > 2:
@@ -154,16 +157,16 @@ def plot_feet_and_com(
         return arr[:, 0], arr[:, 1]
 
     for name, arr in [
-        ("LF pos (Pinocchio)", lf_pin_pos),
-        ("LF pos (reference)", lf_ref_pos),
-        ("LF pos (PyBullet)", lf_pb_pos),
-        ("RF pos (Pinocchio)", rf_pin_pos),
-        ("RF pos (reference)", rf_ref_pos),
-        ("RF pos (PyBullet)", rf_pb_pos),
-        ("CoM pos (Pinocchio)", com_pin_pos),
-        ("CoM pos (reference)", com_ref_pos),
-        ("CoM pos (PyBullet)", com_pb_pos),
-        ("ZMP pos (PyBullet)", zmp_pos),
+        ("Left foot position (Pinocchio)", lf_pin_pos),
+        ("Left foot position (reference)", lf_ref_pos),
+        ("Left foot position (PyBullet)", lf_pb_pos),
+        ("Right foot position (Pinocchio)", rf_pin_pos),
+        ("Right foot position (reference)", rf_ref_pos),
+        ("Right foot position (PyBullet)", rf_pb_pos),
+        ("CoM position (Pinocchio)", com_pin_pos),
+        ("CoM position (reference)", com_ref_pos),
+        ("CoM position (PyBullet)", com_pb_pos),
+        ("ZMP position (PyBullet)", zmp_pos),
     ]:
         x, y = traj2d(arr)
         key = "ref" if "ref" in name.lower() else ("pb" if "pb" in name.lower() else "pin")
@@ -173,7 +176,6 @@ def plot_feet_and_com(
     ax2.set_ylabel("y [m]")
     ax2.grid(True)
     ax2.legend(loc="center left", bbox_to_anchor=(1, 0.5))
-    fig2.tight_layout()
     ax2.set_title(f"{title_prefix} — plan view (x–y)")
 
     plt.show()
