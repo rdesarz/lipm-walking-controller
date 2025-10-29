@@ -49,6 +49,7 @@ def plot_feet_and_com(
     com_ref_pos,
     com_pb_pos,
     com_pin_pos,
+    zmp_pos,
     title_prefix="Feet and CoM",
 ):
     # Trim to common length
@@ -63,6 +64,7 @@ def plot_feet_and_com(
         com_ref_pos,
         com_pb_pos,
         com_pin_pos,
+        zmp_pos,
     ) = _trim_to_min_len(
         [
             t,
@@ -75,6 +77,7 @@ def plot_feet_and_com(
             com_ref_pos,
             com_pb_pos,
             com_pin_pos,
+            zmp_pos,
         ]
     )
 
@@ -89,6 +92,7 @@ def plot_feet_and_com(
         com_ref_pos,
         com_pb_pos,
         com_pin_pos,
+        zmp_pos,
     )
     t = t[mask]
     lf_pin_pos = lf_pin_pos[mask]
@@ -100,6 +104,7 @@ def plot_feet_and_com(
     com_ref_pos = com_ref_pos[mask]
     com_pb_pos = com_pb_pos[mask]
     com_pin_pos = com_pin_pos[mask]
+    zmp_pos = zmp_pos[mask]
 
     # -------- Time plots (x,z,y in meters) --------
     fig, axes = plt.subplots(3, sharex=True, layout="constrained", figsize=(12, 8))
@@ -114,6 +119,7 @@ def plot_feet_and_com(
         ("CoM pin", com_pin_pos),
         ("CoM pb", com_pb_pos),
         ("CoM ref", com_ref_pos),
+        ("ZMP pos", zmp_pos),
     ]
     coord_labels = ["x [m]", "z [m]", "y [m]"]
     coord_idx = [0, 2, 1]  # match your original order
@@ -157,6 +163,7 @@ def plot_feet_and_com(
         ("CoM pos (Pinocchio)", com_pin_pos),
         ("CoM pos (reference)", com_ref_pos),
         ("CoM pos (PyBullet)", com_pb_pos),
+        ("ZMP pos (PyBullet)", zmp_pos),
     ]:
         x, y = traj2d(arr)
         key = "ref" if "ref" in name.lower() else ("pb" if "pb" in name.lower() else "pin")

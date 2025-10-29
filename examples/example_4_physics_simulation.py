@@ -189,6 +189,8 @@ def main():
     rf_pin_pos = np.zeros((len(phases), 3))
     rf_pb_pos = np.zeros((len(phases), 3))
 
+    zmp_pos = np.zeros((len(phases), 3))
+
     # We start the walking phase
     for k, _ in enumerate(phases[:-2]):
         # Get the current configuration of the robot from the simulator
@@ -247,6 +249,8 @@ def main():
 
         simulator.step()
 
+        zmp_pos[k] = simulator.get_zmp_pose()
+
         if args.plot_results:
             pin.computeCentroidalMap(talos.model, talos.data, q_init)
             com_pin = pin.centerOfMass(talos.model, talos.data, q_init)
@@ -276,6 +280,7 @@ def main():
             com_ref_pos=com_ref_pos,
             com_pb_pos=com_pb_pos,
             com_pin_pos=com_pin_pos,
+            zmp_pos=zmp_pos,
             title_prefix="Talos walking",
         )
 

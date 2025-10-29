@@ -470,3 +470,43 @@ class Simulator:
         state = pb.getLinkState(self.robot, i, computeForwardKinematics=1)
 
         return state[4], state[5]
+
+    def get_zmp_pose(self):
+        cps = pb.getContactPoints(bodyA=self.robot, bodyB=self.plane)
+
+        F = np.zeros(3)
+        M = np.zeros(3)
+
+        for cp in cps:
+            a = cp[1]  # bodyUniqueIdA
+            b = cp[2]  # bodyUniqueIdB
+            pos_on_a = np.array(cp[5])  # positionOnA in world
+            pos_on_b = np.array(cp[6])  # positionOnB in world
+            n_b2a = np.array(cp[7])  # contactNormalOnB (points B -> A)
+            fn = cp[9]  # normalForce
+            ft1 = cp[10] if len(cp) > 10 else 0.0
+            dir1 = np.array(cp[11]) if len(cp) > 11 else np.zeros(3)
+            ft2 = cp[12] if len(cp) > 12 else 0.0
+            dir2 = np.array(cp[13]) if len(cp) > 13 else np.zeros(3)
+
+            # Force vector defined along B's normal and friction directions
+            f_on_b = fn * n_b2a + ft1 * dir1 + ft2 * dir2
+            # Action–reaction: force on A is opposite
+            if a == self.robot and b != self.robot:
+                f = -f_on_b
+                r = pos_on_a
+            elif b == self.robot and a != self.robot:
+                f = f_on_b
+                r = pos_on_b
+            else:
+                continue
+
+            F += f
+            M += np.cross(r, f)
+
+        if abs(F[2]) < 1e-6:
+            return None  # undefined ZMP
+
+        px = -M[1] / F[2]
+        py = M[0] / F[2]
+        return np.array([px, py, 0.0])
