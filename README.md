@@ -173,7 +173,7 @@ a simulated environment:
 
 ```bash
 xhost +
-docker run --rm -it --env DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:ro --device /dev/dri:/dev/dri lipm-walking-controller python examples/example_4_physics_simulation.py --path-talos-data "/"
+docker run --rm -it --env DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:ro --device /dev/dri:/dev/dri lipm-walking-controller python examples/example_4_physics_simulation.py --path-talos-data --launch-gui"/"
 ```
 
 <p align="center">
