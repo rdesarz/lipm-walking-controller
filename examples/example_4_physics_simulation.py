@@ -208,13 +208,12 @@ def main():
         com_target = np.array([x_k[1], y_k[1], ctrler_params.zc])
 
         # Alternate between feet
-        q_des = []
         if phases[k] < 0.0:
             ik_sol_params.fixed_foot_frame = talos.right_foot_id
             ik_sol_params.moving_foot_frame = talos.left_foot_id
 
             oMf_lf = pin.SE3(oMf_lf_tgt.rotation, lf_path[k])
-            q_des, _ = solve_inverse_kinematics(
+            q_des, dq = solve_inverse_kinematics(
                 q_init,
                 com_target,
                 oMf_fixed_foot=oMf_rf_tgt,
@@ -230,7 +229,7 @@ def main():
             ik_sol_params.moving_foot_frame = talos.right_foot_id
 
             oMf_rf = pin.SE3(oMf_rf_tgt.rotation, rf_path[k])
-            q_des, _ = solve_inverse_kinematics(
+            q_des, dq = solve_inverse_kinematics(
                 q_init,
                 com_target,
                 oMf_fixed_foot=oMf_lf_tgt,
