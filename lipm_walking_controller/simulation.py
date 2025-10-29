@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Tuple, Dict
 
 import numpy as np
 import pinocchio as pin
@@ -7,15 +8,52 @@ import pybullet_data
 
 
 def yaw_of(R):
+    """
+    Return the yaw angle (rotation about +z) of a 3x3 rotation matrix.
+    Args:
+        R (np.ndarray): 3x3 rotation matrix.
+
+    Returns:
+        float: yaw in radians
+
+    Notes:
+        Assumes ZYX convention where yaw is extracted from the top-left 2x2 block.
+    """
     return float(np.arctan2(R[1, 0], R[0, 0]))
 
 
 def rotz(yaw):
+    """
+    Rotation matrix for a yaw about +z.
+
+    Args:
+        yaw (float): angle in radians.
+
+    Returns:
+        np.ndarray: 3x3 rotation matrix Rz(yaw).
+    """
     c, s = np.cos(yaw), np.sin(yaw)
     return np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
 
 
-def snap_feet_to_plane(oMf_lf, oMf_rf, z_offset=0.0, keep_yaw=False):
+def snap_feet_to_plane(
+    oMf_lf: pin.SE3, oMf_rf: pin.SE3, z_offset: float = 0.0, keep_yaw: bool = False
+) -> Tuple[pin.SE3, pin.SE3]:
+    """
+    Project both feet to a horizontal plane shifted by z_offset. Optionally keep yaw orientation of the foot.
+
+    Args:
+        oMf_lf (pin.SE3): world pose of left foot frame.
+        oMf_rf (pin.SE3): world pose of right foot frame.
+        z_offset (float): target plane height in world z. Default 0.0.
+        keep_yaw (bool): if True keep each foot's yaw; otherwise set identity R.
+
+    Returns:
+        Tuple[pin.SE3, pin.SE3]: new world poses (left, right) snapped to the plane.
+
+    Notes:
+        Only translation z is changed. Roll/pitch are set to zero if keep_yaw=False.
+    """
     yl, yr = yaw_of(oMf_lf.rotation), yaw_of(oMf_rf.rotation)
 
     Rl = rotz(yl) if keep_yaw else np.eye(3)
@@ -30,49 +68,93 @@ def snap_feet_to_plane(oMf_lf, oMf_rf, z_offset=0.0, keep_yaw=False):
     return Ml, Mr
 
 
-def compute_base_from_foot_target(model, data, q, foot_frame_id, oMf_target):
+def compute_base_from_foot_target(
+    model: pin.Model, data: pin.Data, q: np.ndarray, foot_frame_id: int, oMf_target: pin.SE3
+):
     """
-    With a free-flyer q[:7] = [p_b, q_b], compute base pose oMb so that
-    the chosen foot frame matches oMf_target, keeping joint part of q.
-    Uses: oMf_target = oMb * bMf(q_joints)
+    Compute world base pose oMb that makes a given foot frame match a target pose.
+
+    Args:
+        model (pin.Model): Pinocchio model with free-flyer first.
+        data (pin.Data): Pinocchio data.
+        q (np.ndarray): configuration. q[:7] = [p_b(3), quat_b(x,y,z,w)].
+        foot_frame_id (int): Pinocchio frame id of the foot.
+        oMf_target (pin.SE3): desired world pose of the foot.
+
+    Returns:
+        pin.SE3: new world base pose oMb_new.
+
+    Method:
+        Keep joint part of q fixed. Let bMf(q_joints) be current foot pose in base.
+        Solve oMf_target = oMb_new * bMf  =>  oMb_new = oMf_target * bMf^{-1}.
     """
     pin.forwardKinematics(model, data, q)
     pin.updateFramePlacements(model, data)
-    bMf = data.oMf[foot_frame_id]  # currently expressed in world
+
     # Extract current base-in-world to convert bMf to base frame:
     p_b = q[:3]
     q_b = q[3:7]
     oMb_cur = pin.SE3(pin.Quaternion(q_b).toRotationMatrix(), p_b)
-    bMf_in_base = oMb_cur.inverse() * bMf  # ^b M_f at current joints
+
+    bMf = data.oMf[foot_frame_id]  # currently expressed in world
+    bMf_in_base = oMb_cur.inverse() * bMf
     oMb_new = oMf_target * bMf_in_base.inverse()
+
     return oMb_new
 
 
-def reset_pybullet_from_q(robot, q, map_joint_idx_to_q_idx):
+def reset_pybullet_from_q(robot_id: int, q: np.ndarray, map_joint_idx_to_q_idx: Dict[int, int]):
+    """
+    Set a PyBullet robot state from a Pinocchio configuration q.
+
+    Args:
+        robot_id (int): PyBullet body unique id.
+        q (np.ndarray): configuration. q[:3]=base pos, q[3:7]=base quat (x,y,z,w), rest joints.
+        map_joint_idx_to_q_idx (Dict[int,int]): Bullet joint id -> q index mapping
+            for actuated joints; fixed joints should be absent or mapped to <0.
+
+    Side effects:
+        Calls pb.resetBasePositionAndOrientation and pb.resetJointState for each joint.
+
+    Notes:
+        PyBullet base pose is the CoM/inertial frame. We transform Pinocchio base_link
+        pose to CoM using getDynamicsInfo(local inertial) before resetting.
+    """
     # base
     p_base = list(q[:3])
     q_base = list(q[3:7])
 
     # Inertial (CoM) pose relative to base_link
-    _, _, _, p_li, q_li, *_ = pb.getDynamicsInfo(robot, -1)
+    _, _, _, p_li, q_li, *_ = pb.getDynamicsInfo(robot_id, -1)
 
     # World pose of CoM/inertial frame
     p_com, q_com = pb.multiplyTransforms(p_base, q_base, p_li, q_li)
 
-    pb.resetBasePositionAndOrientation(robot, p_com, q_com)
+    pb.resetBasePositionAndOrientation(robot_id, p_com, q_com)
 
     # joints
     for j_id, q_id in map_joint_idx_to_q_idx.items():
         if q_id >= 0:
             val = float(q[q_id])
-            pb.resetJointState(robot, j_id, val)
+            pb.resetJointState(robot_id, j_id, val)
 
 
-def apply_position(robot, q_des, j_to_q_idx):
+def apply_position(robot_id: int, q_des: np.ndarray, j_to_q_idx: Dict[int, int]):
+    """
+    Apply position control to Bullet joints using desired joint positions.
+
+    Args:
+        robot_id (int): PyBullet body id.
+        q_des (np.ndarray): desired joint configuration vector aligned with Pinocchio q.
+        j_to_q_idx (Dict[int,int]): Bullet joint id -> q index mapping.
+
+    Side effects:
+        Calls pb.setJointMotorControl2 in POSITION_CONTROL with per-joint force limits.
+    """
     for j_id, q_id in j_to_q_idx.items():
-        joint_max = pb.getJointInfo(robot, j_id)[10]
+        joint_max = pb.getJointInfo(robot_id, j_id)[10]
         pb.setJointMotorControl2(
-            robot,
+            robot_id,
             j_id,
             pb.POSITION_CONTROL,
             targetPosition=q_des[q_id],
@@ -81,10 +163,24 @@ def apply_position(robot, q_des, j_to_q_idx):
         )
 
 
-def build_bullet_to_pin_vmap(robot, model):
+def build_bullet_to_pin_vmap(robot_id, model):
+    """
+    Build a map from Bullet joint id -> Pinocchio velocity index start (idx_vs).
+
+    Args:
+        robot_id (int): PyBullet body id.
+        model (pin.Model): Pinocchio model.
+
+    Returns:
+        Dict[int,int]: mapping Bullet movable joint id -> model.idx_vs[joint].
+
+    Notes:
+        Skips fixed joints in Bullet and Pinocchio. Names must match between URDFs.
+        Useful to index v (size nv) blocks per joint in Pinocchio.
+    """
     name_to_bullet = {}
-    for jid in range(pb.getNumJoints(robot)):
-        jn, jtype = pb.getJointInfo(robot, jid)[1].decode(), pb.getJointInfo(robot, jid)[2]
+    for jid in range(pb.getNumJoints(robot_id)):
+        jn, jtype = pb.getJointInfo(robot_id, jid)[1].decode(), pb.getJointInfo(robot_id, jid)[2]
         if jtype != pb.JOINT_FIXED:
             name_to_bullet[jn] = jid
     j_to_v_idx = {}
@@ -97,11 +193,22 @@ def build_bullet_to_pin_vmap(robot, model):
     return j_to_v_idx
 
 
-def apply_velocity(robot, v_des, j_to_q_idx):
+def apply_velocity(robot_id, v_des, j_to_q_idx):
+    """
+    Velocity control for Bullet joints using desired joint velocities.
+
+    Args:
+        robot_id (int): PyBullet body id.
+        v_des (np.ndarray): desired joint velocity vector aligned with Pinocchio v.
+        j_to_q_idx (Dict[int,int]): Bullet joint id -> q index mapping.
+
+    Side effects:
+        Calls pb.setJointMotorControl2 in VELOCITY_CONTROL with force limits.
+    """
     for j_id, q_id in j_to_q_idx.items():
-        joint_max = pb.getJointInfo(robot, j_id)[10]
+        joint_max = pb.getJointInfo(robot_id, j_id)[10]
         pb.setJointMotorControl2(
-            robot,
+            robot_id,
             j_id,
             pb.VELOCITY_CONTROL,
             targetVelocity=v_des[q_id],
@@ -110,18 +217,45 @@ def apply_velocity(robot, v_des, j_to_q_idx):
         )
 
 
-def reset_position(robot, q_des, j_to_q_idx):
+def reset_position(robot_id, q_des, j_to_q_idx):
+    """
+    Hard reset of Bullet joint positions.
+
+    Args:
+        robot_id (int): PyBullet body id.
+        q_des (np.ndarray): desired joint configuration vector aligned with Pinocchio q.
+        j_to_q_idx (Dict[int,int]): Bullet joint id -> q index mapping.
+
+    Side effects:
+        Calls pb.resetJointState on each mapped joint. No motor control used.
+    """
     for j_id, q_id in j_to_q_idx.items():
         val = q_des[q_id]
-        pb.resetJointState(robot, j_id, val, 0.0)
+        pb.resetJointState(robot_id, j_id, val, 0.0)
 
 
-def get_q_from_pybullet(robot, nq, map_joint_idx_to_q_idx):
+def get_q_from_pybullet(robot_id, nq, map_joint_idx_to_q_idx):
+    """
+    Read a full Pinocchio-style configuration q from PyBullet.
+
+    Args:
+        robot_id (int): PyBullet body id.
+        nq (int): size of configuration vector.
+        map_joint_idx_to_q_idx (Dict[int,int]): Bullet joint id -> q index mapping.
+            Fixed joints should be mapped to <0 or omitted.
+
+    Returns:
+        np.ndarray: q with base pos, base quaternion (x,y,z,w), then joint positions.
+
+    Notes:
+        PyBullet returns CoM pose. Convert to base_link pose using local inertial
+        transform from getDynamicsInfo and its inverse.
+    """
     q = np.zeros(nq)
-    com_pos, com_quat = pb.getBasePositionAndOrientation(robot)
+    com_pos, com_quat = pb.getBasePositionAndOrientation(robot_id)
 
     # Inertial (CoM) pose relative to base_link
-    _, _, _, p_li, q_li, *_ = pb.getDynamicsInfo(robot, -1)
+    _, _, _, p_li, q_li, *_ = pb.getDynamicsInfo(robot_id, -1)
     p_ib, q_ib = pb.invertTransform(p_li, q_li)  # inertial_T_base
 
     # World pose of CoM/inertial frame
@@ -132,14 +266,27 @@ def get_q_from_pybullet(robot, nq, map_joint_idx_to_q_idx):
     for j_id, q_id in map_joint_idx_to_q_idx.items():
         if q_id < 0:  # skip fixed joints
             continue
-        q[q_id] = pb.getJointState(robot, j_id)[0]
+        q[q_id] = pb.getJointState(robot_id, j_id)[0]
     return q
 
 
-def build_map_joints(robot, model):
+def build_map_joints(robot_id, model):
+    """
+    Build Bullet joint id -> Pinocchio q index map using joint names.
+
+    Args:
+        robot_id (int): PyBullet body id.
+        model (pin.Model): Pinocchio model exposing get_joint_id(name)->int.
+
+    Returns:
+        Dict[int,int]: map_joint_idx_to_q_idx for movable joints.
+
+    Notes:
+        Name matching must be exact. Fixed joints should be excluded or mapped to -1.
+    """
     map_joint_idx_to_q_idx = {}
-    for j in range(pb.getNumJoints(robot)):
-        joint_name = pb.getJointInfo(robot, j)[1]
+    for j in range(pb.getNumJoints(robot_id)):
+        joint_name = pb.getJointInfo(robot_id, j)[1]
 
         jid = model.get_joint_id(joint_name)
         if jid is not None and jid >= 0:
@@ -149,6 +296,19 @@ def build_map_joints(robot, model):
 
 
 def link_index(body_id, link_name):
+    """
+    Return the Bullet link index for a given link (joint) name.
+
+    Args:
+        body_id (int): PyBullet body id.
+        link_name (str): link name as stored in Bullet.
+
+    Returns:
+        Optional[int]: link index if found, else None.
+
+    Notes:
+        Uses pb.getJointInfo(...)[12] which stores the link name string.
+    """
     n = pb.getNumJoints(body_id)
     for i in range(n):
         name = pb.getJointInfo(body_id, i)[12].decode()
@@ -210,7 +370,7 @@ class Simulator:
         reset_pybullet_from_q(self.robot, q, self.map_joints)
 
     def apply_position_to_robot(self, q):
-        apply_position(robot=self.robot, q_des=q, j_to_q_idx=self.map_joints)
+        apply_position(robot_id=self.robot, q_des=q, j_to_q_idx=self.map_joints)
 
     def apply_velocity_to_robot(self, v):
         apply_velocity(robot=self.robot, v_des=v, j_to_q_idx=self.vel_map)
