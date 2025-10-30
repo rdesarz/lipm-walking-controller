@@ -17,7 +17,7 @@ from lipm_walking_controller.preview_control import (
     update_control,
     compute_zmp_ref,
 )
-from lipm_walking_controller.model import Talos, q_from_base_and_joints, print_frames
+from lipm_walking_controller.model import Talos, q_from_base_and_joints
 
 from lipm_walking_controller.simulation import (
     snap_feet_to_plane,
@@ -205,6 +205,8 @@ def main():
         _, x_k, y_k = update_control(
             ctrler_mat, zmp_padded[k], zmp_ref_horizon, x_k.copy(), y_k.copy()
         )
+
+        zmp_pos[k] = simulator.get_zmp_pose()
 
         # The CoM target is meant to follow the computed x and y and stay at constant height zc from the feet
         com_target = np.array([x_k[1], y_k[1], ctrler_params.zc])

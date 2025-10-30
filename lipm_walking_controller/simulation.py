@@ -330,14 +330,14 @@ class Simulator:
         pb.setRealTimeSimulation(0)
         pb.setPhysicsEngineParameter(
             fixedTimeStep=dt,
-            numSolverIterations=100,
+            numSolverIterations=300,
             numSubSteps=1,
             useSplitImpulse=1,
             splitImpulsePenetrationThreshold=0.01,
             contactSlop=0.001,
             erp=0.2,
             contactERP=0.2,
-            frictionERP=0.2,
+            frictionERP=0.05,
         )
 
         self.plane = pb.loadURDF("plane.urdf")
@@ -472,25 +472,24 @@ class Simulator:
         return state[4], state[5]
 
     def get_zmp_pose(self):
-        cps = pb.getContactPoints(bodyA=self.robot, bodyB=self.plane)
+        contact_pts = pb.getContactPoints(bodyA=self.robot, bodyB=self.plane)
 
         F = np.zeros(3)
         M = np.zeros(3)
 
-        for cp in cps:
-            a = cp[1]  # bodyUniqueIdA
-            b = cp[2]  # bodyUniqueIdB
-            pos_on_a = np.array(cp[5])  # positionOnA in world
-            pos_on_b = np.array(cp[6])  # positionOnB in world
-            n_b2a = np.array(cp[7])  # contactNormalOnB (points B -> A)
-            fn = cp[9]  # normalForce
-            ft1 = cp[10] if len(cp) > 10 else 0.0
-            dir1 = np.array(cp[11]) if len(cp) > 11 else np.zeros(3)
-            ft2 = cp[12] if len(cp) > 12 else 0.0
-            dir2 = np.array(cp[13]) if len(cp) > 13 else np.zeros(3)
+        for contact_pt in contact_pts:
+            a = contact_pt[1]
+            b = contact_pt[2]
+
+            pos_on_a = np.array(contact_pt[5])
+            pos_on_b = np.array(contact_pt[6])
+
+            n_b2a = np.array(contact_pt[7])
+            fn = contact_pt[9]
 
             # Force vector defined along B's normal and friction directions
-            f_on_b = fn * n_b2a + ft1 * dir1 + ft2 * dir2
+            f_on_b = fn * n_b2a
+
             # Action–reaction: force on A is opposite
             if a == self.robot and b != self.robot:
                 f = -f_on_b
