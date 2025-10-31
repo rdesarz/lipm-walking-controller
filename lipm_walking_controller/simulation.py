@@ -1,3 +1,4 @@
+import typing
 from pathlib import Path
 from typing import Tuple, Dict
 
@@ -193,19 +194,19 @@ def _build_pb_to_pin_joint_vel_vmap(robot_id, model):
     return j_to_v_idx
 
 
-def _apply_velocity_to_pybullet(robot_id, v_des, j_to_q_idx):
+def _apply_velocity_to_pybullet(robot_id, v_des, pb_to_pin_joint_vel):
     """
     Velocity control for Bullet joints using desired joint velocities.
 
     Args:
         robot_id (int): PyBullet body id.
         v_des (np.ndarray): desired joint velocity vector aligned with Pinocchio v.
-        j_to_q_idx (Dict[int,int]): Bullet joint id -> q index mapping.
+        pb_to_pin_joint_vel (Dict[int,int]): Bullet joint id -> q index mapping.
 
     Side effects:
         Calls pb.setJointMotorControl2 in VELOCITY_CONTROL with force limits.
     """
-    for j_id, q_id in j_to_q_idx.items():
+    for j_id, q_id in pb_to_pin_joint_vel.items():
         joint_max = pb.getJointInfo(robot_id, j_id)[10]
         pb.setJointMotorControl2(
             robot_id,
@@ -270,7 +271,7 @@ def _get_q_from_pybullet(robot_id, nq, map_joint_idx_to_q_idx):
     return q
 
 
-def build_pb_to_pin_joints_map(robot_id, model):
+def _build_pb_to_pin_joints_map(robot_id, model):
     """
     Build Bullet joint id -> Pinocchio q index map using joint names.
 
@@ -319,7 +320,36 @@ def _link_index(body_id, link_name):
 
 
 class Simulator:
-    def __init__(self, dt, path_to_model: Path, model, launch_gui=True):
+    """
+    Thin PyBullet wrapper for loading a robot URDF and driving it from
+    joint positions/velocities. Also exposes utilities for camera control,
+    contact-force/ZMP computation, and setter/getter for joints configuration.
+    The robot is loaded at the origin and a flat horizontal plane is added at z=0.
+    """
+
+    def __init__(self, dt, path_to_robot_urdf: Path, model, launch_gui=True):
+        """
+        Initialize PyBullet, load ground and TALOS, and set physics.
+
+        Parameters
+        ----------
+        dt : float
+            Fixed simulation time step in seconds.
+        path_to_robot_urdf : pathlib.Path
+            Base path containing the URDF data.
+        model : Any
+            Pinocchio model container used to build pb↔pin joint maps.
+            Must expose ``model`` for velocity map construction.
+        launch_gui : bool, default True
+            If True, starts PyBullet with GUI. Otherwise uses DIRECT mode.
+
+        Side Effects
+        ------------
+        - Connects to PyBullet and configures gravity, time step, and engine params.
+        - Loads a plane and the TALOS robot in the world.
+        - Builds maps from PyBullet joint indices to Pinocchio q/v indices.
+        """
+        # Initialize the simulator
         self.cid = pb.connect(
             pb.GUI if launch_gui else pb.DIRECT,
             options="--window_title=PyBullet --width=1920 --height=1080",
@@ -330,7 +360,7 @@ class Simulator:
         pb.setRealTimeSimulation(0)
         pb.setPhysicsEngineParameter(
             fixedTimeStep=dt,
-            numSolverIterations=300,
+            numSolverIterations=100,
             numSubSteps=1,
             useSplitImpulse=1,
             splitImpulsePenetrationThreshold=0.01,
@@ -340,41 +370,101 @@ class Simulator:
             frictionERP=0.05,
         )
 
-        self.plane = pb.loadURDF("plane.urdf")
-        path_to_urdf = path_to_model / "talos_data" / "urdf" / "talos_full.urdf"
-        self.robot = pb.loadURDF(
-            str(path_to_urdf),
+        # Load elements in the simulation
+        self.plane_id: int = pb.loadURDF("plane.urdf")
+
+        self.robot_id: int = pb.loadURDF(
+            str(path_to_robot_urdf),
             [0, 0, 0],
             [0, 0, 0, 1],
             useFixedBase=False,
             flags=pb.URDF_MERGE_FIXED_LINKS,
         )
 
-        self.pb_to_pin_joint_vel = _build_pb_to_pin_joint_vel_vmap(self.robot, model.model)
-        self.pb_to_pin_joints = build_pb_to_pin_joints_map(self.robot, model)
+        # Build mapping between joints for both velocities and position
+        self.pb_to_pin_joint_vel = _build_pb_to_pin_joint_vel_vmap(self.robot_id, model.model)
+        self.pb_to_pin_joints_pos = _build_pb_to_pin_joints_map(self.robot_id, model)
 
-        self.line = None
-        self.text = None
-        self.point = None
+        self._displayed_lines = None
+        self._displayed_points = None
 
     def step(self):
+        """
+        Advance the physics simulation by one fixed time step.
+
+        Notes
+        -----
+        Uses the engine time step configured in `__init__`.
+        """
         pb.stepSimulation()
 
-    def reset_robot(self, q: np.ndarray):
-        _reset_pybullet_from_q(self.robot, q, self.pb_to_pin_joints)
+    def reset_robot_configuration(self, q: np.ndarray):
+        """
+        Hard-reset robot state from a configuration vector.
 
-    def apply_position_to_robot(self, q: np.ndarray):
-        _apply_position_to_pybullet(robot_id=self.robot, q_des=q, j_to_q_idx=self.pb_to_pin_joints)
+        Parameters
+        ----------
+        q : np.ndarray, shape (nq,)
+            Full Pinocchio configuration, including free-flyer (7).
+            Applied to PyBullet base + joints via helper mapping.
+        """
+        _reset_pybullet_from_q(self.robot_id, q, self.pb_to_pin_joints_pos)
 
-    def apply_velocity_to_robot(self, v: np.ndarray):
-        _apply_velocity_to_pybullet(
-            robot_id=self.robot, v_des=v, j_to_q_idx=self.pb_to_pin_joint_vel
+    def apply_joints_pos_to_robot(self, q: np.ndarray):
+        """
+        Send position targets to PyBullet joint position controllers.
+
+        Parameters
+        ----------
+        q : np.ndarray, shape (nq,)
+            Desired configuration in Pinocchio ordering.
+        """
+        _apply_position_to_pybullet(
+            robot_id=self.robot_id, q_des=q, j_to_q_idx=self.pb_to_pin_joints_pos
         )
 
-    def get_q(self, nq: int):
-        return _get_q_from_pybullet(self.robot, nq, self.pb_to_pin_joints)
+    def apply_joints_vel_to_robot(self, v: np.ndarray):
+        """
+        Send joint-space velocity targets to the simulator.
+
+        Parameters
+        ----------
+        v : np.ndarray, shape (nv,)
+            Desired generalized velocities in Pinocchio ordering.
+        """
+        _apply_velocity_to_pybullet(
+            robot_id=self.robot_id, v_des=v, pb_to_pin_joint_vel=self.pb_to_pin_joint_vel
+        )
+
+    def get_q(self, nq: int) -> np.ndarray:
+        """
+        Read the current configuration vector from PyBullet.
+
+        Parameters
+        ----------
+        nq : int
+            Total configuration size expected by Pinocchio.
+
+        Returns
+        -------
+        np.ndarray, shape (nq,)
+            Configuration with base pose first (x,y,z, qw,qx,qy,qz), then joints.
+        """
+        return _get_q_from_pybullet(self.robot_id, nq, self.pb_to_pin_joints_pos)
 
     def update_camera_to_follow_pos(self, x: float, y: float, z: float):
+        """
+        Aim the debug camera at a world position.
+
+        Parameters
+        ----------
+        x, y, z : float
+            Target position in world frame for the camera to look at.
+
+        Notes
+        -----
+        Keeps distance, yaw, and pitch fixed.
+        """
         pb.resetDebugVisualizerCamera(
             cameraDistance=4.0,
             cameraYaw=50,
@@ -383,10 +473,27 @@ class Simulator:
         )
 
     def draw_contact_forces(self, color=(0, 1, 0), scale=0.002):
+        """
+        Render an averaged ground-reaction normal as a debug line.
+
+        Parameters
+        ----------
+        color : tuple[float, float, float], default (0, 1, 0)
+            RGB color in [0,1].
+        scale : float, default 0.002
+            Visual scale factor converting Newtons to line length.
+
+        Notes
+        -----
+        - Aggregates all robot–plane contacts, averages contact locations,
+          sums normal forces, and draws a single arrow along the last
+          observed contact normal.
+        - Updates a persistent debug line if it already exists.
+        """
         # iterate all foot links if you want per-foot colors
         cps_all = []
 
-        cps_all.extend(pb.getContactPoints(bodyA=self.robot, bodyB=self.plane))
+        cps_all.extend(pb.getContactPoints(bodyA=self.robot_id, bodyB=self.plane_id))
 
         mean_x = 0.0
         mean_y = 0.0
@@ -414,29 +521,65 @@ class Simulator:
             )
 
             # arrow for normal force
-            if self.line is None:
-                self.line = pb.addUserDebugLine(start, end, lineColorRGB=color, lineWidth=3)
-                # self.text = pb.addUserDebugText(f"{total_force} N", end)
+            if self._displayed_lines is None:
+                self._displayed_lines = pb.addUserDebugLine(
+                    start, end, lineColorRGB=color, lineWidth=3
+                )
             else:
                 pb.addUserDebugLine(
                     start,
                     end,
                     lineColorRGB=color,
                     lineWidth=3,
-                    replaceItemUniqueId=self.line,
+                    replaceItemUniqueId=self._displayed_lines,
                 )
-                # pb.addUserDebugText(f"{total_force} N", end, replaceItemUniqueId=self.text)
 
-    def draw_point(self, points, colors):
-        if self.point is None:
-            self.point = pb.addUserDebugPoints(points, colors, pointSize=5.0)
+    def draw_points(
+        self,
+        points: typing.List[typing.Tuple],
+        colors: typing.Optional[typing.List[typing.Tuple[float, float, float]]] = None,
+        point_size: int = 5,
+    ):
+        """
+        Draw or update a set of debug points.
+
+        Parameters
+        ----------
+        points : array-like, shape (N, 3)
+            World coordinates of points.
+        colors : array-like, shape (N, 3)
+            RGB colors in [0,1] per point.
+        point_size: size of the displayed points
+
+        Notes
+        -----
+        Uses a persistent debug item so updates replace the existing set (for performance reasons)
+        """
+        colors = [(1, 1, 1) for _ in points] if None else colors
+        if self._displayed_points is None:
+            self._displayed_points = pb.addUserDebugPoints(points, colors, pointSize=point_size)
         else:
-            pb.addUserDebugPoints(points, colors, pointSize=5.0, replaceItemUniqueId=self.point)
+            pb.addUserDebugPoints(
+                points, colors, pointSize=point_size, replaceItemUniqueId=self._displayed_points
+            )
 
-    def get_robot_com_position(self):
+    def get_robot_com_position(self) -> np.ndarray:
+        """
+        Compute the whole-body center of mass in world coordinates.
+
+        Returns
+        -------
+        list[float]
+            [x, y, z] position of the CoM in the world frame.
+
+        Method
+        ------
+        - Retrieves base inertial COM, then iterates articulated links.
+        - Mass-weights each link COM and normalizes by total mass.
+        """
         # base (link index = -1)
-        base_pos, base_orn = pb.getBasePositionAndOrientation(self.robot)
-        dyn_info = pb.getDynamicsInfo(self.robot, -1)
+        base_pos, base_orn = pb.getBasePositionAndOrientation(self.robot_id)
+        dyn_info = pb.getDynamicsInfo(self.robot_id, -1)
         m_base = dyn_info[0]
 
         # base COM in world = base frame + inertial offset rotated
@@ -452,28 +595,76 @@ class Simulator:
         com_sum = m_base * np.array(base_inertial_world)
 
         # each articulated link
-        for link_idx in range(pb.getNumJoints(self.robot)):
+        for link_idx in range(pb.getNumJoints(self.robot_id)):
             # get COM position of the link directly in world
-            state = pb.getLinkState(self.robot, link_idx, computeForwardKinematics=True)
+            state = pb.getLinkState(self.robot_id, link_idx, computeForwardKinematics=True)
             link_com_world = np.array(state[0])  # COM position in world
-            m_link = pb.getDynamicsInfo(self.robot, link_idx)[0]
+            m_link = pb.getDynamicsInfo(self.robot_id, link_idx)[0]
             com_sum += m_link * link_com_world
             m_total += m_link
 
         return (com_sum / m_total).tolist()
 
     def get_robot_pos(self):
-        return pb.getBasePositionAndOrientation(self.robot)
+        """
+        Get the floating base world pose.
+
+        Returns
+        -------
+        tuple[list[float], list[float]]
+            (position [x,y,z], quaternion [x,y,z,w]) in world frame.
+        """
+        return pb.getBasePositionAndOrientation(self.robot_id)
 
     def get_robot_frame_pos(self, frame_name: str):
+        """
+        Get world pose of a named link frame.
+
+        Parameters
+        ----------
+        frame_name : str
+            Name of the link in the URDF.
+
+        Returns
+        -------
+        tuple[tuple[float, float, float], tuple[float, float, float, float]]
+            (position, quaternion) of the link frame in world.
+            Uses PyBullet forward kinematics.
+
+        Raises
+        ------
+        KeyError
+            If `frame_name` is not found.
+        """
         # Link/world poses
-        i = link_index(self.robot, frame_name)
-        state = pb.getLinkState(self.robot, i, computeForwardKinematics=1)
+        i = _link_index(self.robot_id, frame_name)
+        state = pb.getLinkState(self.robot_id, i, computeForwardKinematics=1)
 
         return state[4], state[5]
 
     def get_zmp_pose(self):
-        contact_pts = pb.getContactPoints(bodyA=self.robot, bodyB=self.plane)
+        """
+        Estimate the Zero-Moment Point using contact wrenches against the plane.
+
+        Returns
+        -------
+        np.ndarray | None
+            [px, py, 0.0] in world if vertical force Fz != 0, else None.
+
+        Method
+        ------
+        - Iterates robot–plane contact points.
+        - Accumulates total contact force F and moment M about world origin
+          using r × f at the contact position.
+        - ZMP on the ground plane is computed as:
+          px = -M_y / F_z,  py = M_x / F_z.
+
+        Notes
+        -----
+        This assumes a flat ground at z=0 and uses only normal forces
+        reported by PyBullet at each contact.
+        """
+        contact_pts = pb.getContactPoints(bodyA=self.robot_id, bodyB=self.plane_id)
 
         F = np.zeros(3)
         M = np.zeros(3)
@@ -492,10 +683,10 @@ class Simulator:
             f_on_b = fn * n_b2a
 
             # Action–reaction: force on A is opposite
-            if a == self.robot and b != self.robot:
+            if a == self.robot_id and b != self.robot_id:
                 f = -f_on_b
                 r = pos_on_a
-            elif b == self.robot and a != self.robot:
+            elif b == self.robot_id and a != self.robot_id:
                 f = f_on_b
                 r = pos_on_b
             else:

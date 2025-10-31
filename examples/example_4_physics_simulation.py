@@ -20,8 +20,8 @@ from lipm_walking_controller.preview_control import (
 from lipm_walking_controller.model import Talos, q_from_base_and_joints
 
 from lipm_walking_controller.simulation import (
-    snap_feet_to_plane,
-    compute_base_from_foot_target,
+    _snap_feet_to_plane,
+    _compute_base_from_foot_target,
     Simulator,
 )
 
@@ -38,11 +38,11 @@ def main():
     dt = 1.0 / 240.0
 
     # ZMP reference parameters
-    t_ss = 0.8  # Single support phase time window
-    t_ds = 0.8  # Double support phase time window
-    t_init = 2.0  # Initialization phase (transition from still position to first step)
+    t_ss = 5.0  # Single support phase time window
+    t_ds = 5.0  # Double support phase time window
+    t_init = 5.0  # Initialization phase (transition from still position to first step)
     t_end = 1.0
-    n_steps = 11  # Number of steps executed by the robot
+    n_steps = 1  # Number of steps executed by the robot
     l_stride = 0.1  # Length of the stride
     max_height_foot = 0.01  # Maximal height of the swing foot
 
@@ -65,7 +65,10 @@ def main():
     # Initialize simulator
     simulator = Simulator(
         dt=dt,
-        path_to_model=args.path_talos_data.expanduser(),
+        path_to_robot_urdf=args.path_talos_data.expanduser()
+        / "talos_data"
+        / "urdf"
+        / "talos_full.urdf",
         model=talos,
         launch_gui=args.launch_gui,
     )
@@ -73,10 +76,10 @@ def main():
     # Compute the right and left foot position as well as the base initial position
     oMf_rf0 = talos.data.oMf[talos.right_foot_id].copy()
     oMf_lf0 = talos.data.oMf[talos.left_foot_id].copy()
-    oMf_lf_tgt, oMf_rf_tgt = snap_feet_to_plane(oMf_lf0, oMf_rf0)
+    oMf_lf_tgt, oMf_rf_tgt = _snap_feet_to_plane(oMf_lf0, oMf_rf0)
 
     oMf_torso = talos.data.oMf[talos.torso_id].copy()
-    oMb_init = compute_base_from_foot_target(
+    oMb_init = _compute_base_from_foot_target(
         talos.model, talos.data, q_init, talos.left_foot_id, oMf_lf_tgt
     )
 
@@ -111,7 +114,7 @@ def main():
     # Update kinematic model and simulator
     pin.forwardKinematics(talos.model, talos.data, q_init)
     pin.updateFramePlacements(talos.model, talos.data)
-    simulator.reset_robot(q_init)
+    simulator.reset_robot_configuration(q_init)
 
     # First we hard reset the position of the robot and let the simulation run for a few iterations with 0 gravity to
     # stabilize the robot
@@ -152,7 +155,7 @@ def main():
         simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
 
         # This step is only here to start with the right initial position. Therefore we perform a reset
-        simulator.reset_robot(q_des)
+        simulator.reset_robot_configuration(q_des)
         simulator.step()
 
     lf_initial_pose = oMf_lf_tgt.translation
@@ -244,7 +247,7 @@ def main():
 
             oMf_rf_tgt = pin.SE3(oMf_rf_tgt.rotation, rf_path[k + 1])
 
-        simulator.apply_position_to_robot(q_des)
+        simulator.apply_joints_pos_to_robot(q_des)
 
         # Uncomment to follow the center of mass of the robot
         simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
