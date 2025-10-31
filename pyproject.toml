@@ -29,6 +29,7 @@ dependencies = [
   # Pinocchio: pip package name is `pin`. Prefer conda-forge/apt if pip wheels are unavailable.
   "pin>=2.7",
   "pybullet>=3.2",
+  "mkdocstrings[python]>=0.18",
 ]
 
 [project.urls]

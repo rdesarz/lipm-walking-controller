@@ -9,12 +9,14 @@ plugins:
           options:
             docstring_style: "numpy"
             show_source: false
-            separate_signature: false
+            separate_signature: true
             show_signature_annotations: false
             members_order: source
             filters: ["!^_"]
             inherited_members: false
             merge_init_into_class: true
 nav:
-  - "Index": index.md
-  - "API": api.md
+  - Home: index.md
+  - Code API:
+      - Simulation: simulation.md
+      - Preview control: preview_control.md
