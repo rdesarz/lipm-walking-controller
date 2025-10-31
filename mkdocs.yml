@@ -16,7 +16,8 @@ plugins:
             inherited_members: false
             merge_init_into_class: true
 nav:
-  - Home: index.md
+  - Home: home.md
   - Code API:
-      - Simulation: simulation.md
       - Preview control: preview_control.md
+      - Inverse kinematic: inverse_kinematics.md
+      - Simulation: simulation.md

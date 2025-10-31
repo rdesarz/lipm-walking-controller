@@ -10,6 +10,38 @@ from qpsolvers import solve_qp
 
 @dataclass
 class InvKinSolverParams:
+    """
+    Parameters for inverse-kinematics QP with CoM, feet, and torso tasks.
+
+    Attributes
+    ----------
+    fixed_foot_frame : int
+        Pinocchio frame id of the stance foot (hard equality).
+    moving_foot_frame : int
+        Pinocchio frame id of the swing foot (soft task).
+    torso_frame : int
+        Pinocchio frame id for torso orientation task (angular only).
+    model : pin.Model
+        Pinocchio kinematic model.
+    data : Any
+        Pinocchio data buffer associated with `model`.
+    w_torso : float
+        Weight of torso angular task in the QP cost.
+    w_com : float
+        Weight of CoM task in the QP cost.
+    w_mf : float
+        Weight of moving-foot 6D task in the QP cost.
+    mu : float
+        Damping on joint velocities in the QP (Tikhonov term).
+    dt : float
+        Time step used by caller; not used here directly but kept for API symmetry.
+    locked_joints : list[int] | None
+        Optional list of joints or velocity indices to lock.
+        Each element can be:
+          - a Pinocchio joint id j in [0, model.njoints), which locks its velocity span
+          - or a direct velocity index v in [0, model.nv)
+    """
+
     fixed_foot_frame: int
     moving_foot_frame: int
     torso_frame: int
@@ -24,6 +56,35 @@ class InvKinSolverParams:
 
 
 def se3_task_error_and_jacobian(model, data, q, frame_id, M_des):
+    """
+    Compute 6D right-invariant pose error and task Jacobian for a frame.
+
+    Parameters
+    ----------
+    model : pin.Model
+        Pinocchio model.
+    data : pin.Data
+        Pinocchio data (assumed up to date for frame placements if needed).
+    q : ndarray, shape (nq,)
+        Configuration vector.
+    frame_id : int
+        Target frame id in `model`.
+    M_des : pin.SE3
+        Desired frame pose in world.
+
+    Returns
+    -------
+    e6 : ndarray, shape (6,)
+        Right-invariant pose residual in the LOCAL frame.
+        Order: angular (rx, ry, rz), linear (vx, vy, vz).
+    Jtask : ndarray, shape (6, nv)
+        Task Jacobian that maps generalized velocity `dq` to residual rate.
+
+    Notes
+    -----
+    Uses LOCAL frame convention and Pinocchio's `Jlog6` to map spatial velocity
+    to se(3) log-space.
+    """
     # Pose of frame i in world; LOCAL frame convention (right differentiation)
     oMi = data.oMf[frame_id]  # requires updateFramePlacements()
     iMd = oMi.actInv(M_des)  # ^i M_d  = oMi^{-1} * oMdes
@@ -41,7 +102,22 @@ def se3_task_error_and_jacobian(model, data, q, frame_id, M_des):
     return e6, Jtask
 
 
-def joint_vel_span(j, model):
+def _joint_vel_span(j, model):
+    """
+    Return the velocity-index span for joint `j`.
+
+    Parameters
+    ----------
+    j : int
+        Pinocchio joint id.
+    model : pin.Model
+        Model containing `idx_v` mapping.
+
+    Returns
+    -------
+    range
+        Range of velocity indices covered by joint `j`.
+    """
     i = model.idx_v[j]
     nvj = (model.idx_v[j + 1] - i) if j + 1 < model.njoints else (model.nv - i)
     return range(i, i + nvj)
@@ -55,6 +131,48 @@ def solve_inverse_kinematics(
     oMf_torso,
     params: InvKinSolverParams,
 ):
+    """
+    One-step inverse kinematics via QP with a hard stance-foot constraint.
+
+    Problem
+    -------
+    Minimize
+        w_com || J_com dq - e_com ||^2
+      + w_torso || J_torso dq - e_torso ||^2
+      + w_mf || J_mf dq - e_mf ||^2
+      + mu || dq ||^2
+    subject to
+        J_ff dq = e_ff        (fixed-foot 6D equality)
+
+    Parameters
+    ----------
+    q : ndarray, shape (nq,)
+        Current configuration.
+    com_target : ndarray, shape (3,)
+        Desired CoM position in world.
+    oMf_fixed_foot : pin.SE3
+        Desired world pose of stance foot.
+    oMf_moving_foot : pin.SE3
+        Desired world pose of swing foot.
+    oMf_torso : pin.SE3
+        Desired world pose of torso (only angular part is used).
+    params : InvKinSolverParams
+        Weights, model/data, damping, and optional locked joints.
+
+    Returns
+    -------
+    q_next : ndarray, shape (nq,)
+        Integrated configuration `integrate(model, q, dq)`.
+    dq : ndarray, shape (nv,)
+        Generalized velocity solution (zeros for locked indices).
+
+    Notes
+    -----
+    - Builds a reduced QP on active velocity indices if `locked_joints` is set.
+    - CoM task uses Pinocchio `jacobianCenterOfMass`.
+    - Torso task selects angular rows via S = [0 I; 0 0].
+    - QP is solved with `qpsolvers.solve_qp(..., solver="osqp")`.
+    """
     model, data = params.model, params.data
 
     # ---------- Kinematics ----------

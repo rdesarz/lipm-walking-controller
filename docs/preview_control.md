@@ -1,4 +1,4 @@
-## Preview control
+## Zero-Moment Point (ZMP) Preview Controller
 
 ::: lipm_walking_controller.preview_control
     options:
