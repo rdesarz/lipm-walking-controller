@@ -1,17 +1,9 @@
-# Welcome to MkDocs
+# Biped Walking Controller
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+Educational Python library for humanoid walking.
 
-## Commands
-
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
-
-## Project layout
-
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+**Features**
+- ZMP preview control for CoM trajectories using the Linear Inverted Pendulum Model (LIPM)
+- Footstep and foot trajectory generation
+- Differential inverse kinematics solved as a QP with Pinocchio
+- PyBullet integration for physics-based simulation
