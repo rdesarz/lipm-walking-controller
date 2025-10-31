@@ -7,7 +7,7 @@ import pybullet as pb
 import pybullet_data
 
 
-def yaw_of(R):
+def _yaw_of(R):
     """
     Return the yaw angle (rotation about +z) of a 3x3 rotation matrix.
     Args:
@@ -22,7 +22,7 @@ def yaw_of(R):
     return float(np.arctan2(R[1, 0], R[0, 0]))
 
 
-def rotz(yaw):
+def _rotz(yaw):
     """
     Rotation matrix for a yaw about +z.
 
@@ -36,7 +36,7 @@ def rotz(yaw):
     return np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
 
 
-def snap_feet_to_plane(
+def _snap_feet_to_plane(
     oMf_lf: pin.SE3, oMf_rf: pin.SE3, z_offset: float = 0.0, keep_yaw: bool = False
 ) -> Tuple[pin.SE3, pin.SE3]:
     """
@@ -54,10 +54,10 @@ def snap_feet_to_plane(
     Notes:
         Only translation z is changed. Roll/pitch are set to zero if keep_yaw=False.
     """
-    yl, yr = yaw_of(oMf_lf.rotation), yaw_of(oMf_rf.rotation)
+    yl, yr = _yaw_of(oMf_lf.rotation), _yaw_of(oMf_rf.rotation)
 
-    Rl = rotz(yl) if keep_yaw else np.eye(3)
-    Rr = rotz(yr) if keep_yaw else np.eye(3)
+    Rl = _rotz(yl) if keep_yaw else np.eye(3)
+    Rr = _rotz(yr) if keep_yaw else np.eye(3)
 
     Pl = np.array([oMf_lf.translation[0], oMf_lf.translation[1], z_offset])
     Pr = np.array([oMf_rf.translation[0], oMf_rf.translation[1], z_offset])
@@ -68,7 +68,7 @@ def snap_feet_to_plane(
     return Ml, Mr
 
 
-def compute_base_from_foot_target(
+def _compute_base_from_foot_target(
     model: pin.Model, data: pin.Data, q: np.ndarray, foot_frame_id: int, oMf_target: pin.SE3
 ):
     """
@@ -103,7 +103,7 @@ def compute_base_from_foot_target(
     return oMb_new
 
 
-def reset_pybullet_from_q(robot_id: int, q: np.ndarray, map_joint_idx_to_q_idx: Dict[int, int]):
+def _reset_pybullet_from_q(robot_id: int, q: np.ndarray, map_joint_idx_to_q_idx: Dict[int, int]):
     """
     Set a PyBullet robot state from a Pinocchio configuration q.
 
@@ -139,7 +139,7 @@ def reset_pybullet_from_q(robot_id: int, q: np.ndarray, map_joint_idx_to_q_idx: 
             pb.resetJointState(robot_id, j_id, val)
 
 
-def apply_position_to_pybullet(robot_id: int, q_des: np.ndarray, j_to_q_idx: Dict[int, int]):
+def _apply_position_to_pybullet(robot_id: int, q_des: np.ndarray, j_to_q_idx: Dict[int, int]):
     """
     Apply position control to Bullet joints using desired joint positions.
 
@@ -163,7 +163,7 @@ def apply_position_to_pybullet(robot_id: int, q_des: np.ndarray, j_to_q_idx: Dic
         )
 
 
-def build_bullet_to_pin_vmap(robot_id, model):
+def _build_pb_to_pin_joint_vel_vmap(robot_id, model):
     """
     Build a map from Bullet joint id -> Pinocchio velocity index start (idx_vs).
 
@@ -193,7 +193,7 @@ def build_bullet_to_pin_vmap(robot_id, model):
     return j_to_v_idx
 
 
-def apply_velocity_to_pybullet(robot_id, v_des, j_to_q_idx):
+def _apply_velocity_to_pybullet(robot_id, v_des, j_to_q_idx):
     """
     Velocity control for Bullet joints using desired joint velocities.
 
@@ -217,7 +217,7 @@ def apply_velocity_to_pybullet(robot_id, v_des, j_to_q_idx):
         )
 
 
-def reset_position(robot_id, q_des, j_to_q_idx):
+def _reset_pybullet_position(robot_id, q_des, j_to_q_idx):
     """
     Hard reset of Bullet joint positions.
 
@@ -234,7 +234,7 @@ def reset_position(robot_id, q_des, j_to_q_idx):
         pb.resetJointState(robot_id, j_id, val, 0.0)
 
 
-def get_q_from_pybullet(robot_id, nq, map_joint_idx_to_q_idx):
+def _get_q_from_pybullet(robot_id, nq, map_joint_idx_to_q_idx):
     """
     Read a full Pinocchio-style configuration q from PyBullet.
 
@@ -270,7 +270,7 @@ def get_q_from_pybullet(robot_id, nq, map_joint_idx_to_q_idx):
     return q
 
 
-def build_map_joints(robot_id, model):
+def build_pb_to_pin_joints_map(robot_id, model):
     """
     Build Bullet joint id -> Pinocchio q index map using joint names.
 
@@ -284,18 +284,18 @@ def build_map_joints(robot_id, model):
     Notes:
         Name matching must be exact. Fixed joints should be excluded or mapped to -1.
     """
-    map_joint_idx_to_q_idx = {}
+    pb_to_pin_joints_map = {}
     for j in range(pb.getNumJoints(robot_id)):
         joint_name = pb.getJointInfo(robot_id, j)[1]
 
         jid = model.get_joint_id(joint_name)
         if jid is not None and jid >= 0:
-            map_joint_idx_to_q_idx[j] = jid
+            pb_to_pin_joints_map[j] = jid
 
-    return map_joint_idx_to_q_idx
+    return pb_to_pin_joints_map
 
 
-def link_index(body_id, link_name):
+def _link_index(body_id, link_name):
     """
     Return the Bullet link index for a given link (joint) name.
 
@@ -350,9 +350,8 @@ class Simulator:
             flags=pb.URDF_MERGE_FIXED_LINKS,
         )
 
-        self.vel_map = build_bullet_to_pin_vmap(self.robot, model.model)
-
-        self.map_joints = build_map_joints(self.robot, model)
+        self.pb_to_pin_joint_vel = _build_pb_to_pin_joint_vel_vmap(self.robot, model.model)
+        self.pb_to_pin_joints = build_pb_to_pin_joints_map(self.robot, model)
 
         self.line = None
         self.text = None
@@ -362,16 +361,18 @@ class Simulator:
         pb.stepSimulation()
 
     def reset_robot(self, q: np.ndarray):
-        reset_pybullet_from_q(self.robot, q, self.map_joints)
+        _reset_pybullet_from_q(self.robot, q, self.pb_to_pin_joints)
 
     def apply_position_to_robot(self, q: np.ndarray):
-        apply_position_to_pybullet(robot_id=self.robot, q_des=q, j_to_q_idx=self.map_joints)
+        _apply_position_to_pybullet(robot_id=self.robot, q_des=q, j_to_q_idx=self.pb_to_pin_joints)
 
     def apply_velocity_to_robot(self, v: np.ndarray):
-        apply_velocity_to_pybullet(robot_id=self.robot, v_des=v, j_to_q_idx=self.vel_map)
+        _apply_velocity_to_pybullet(
+            robot_id=self.robot, v_des=v, j_to_q_idx=self.pb_to_pin_joint_vel
+        )
 
     def get_q(self, nq: int):
-        return get_q_from_pybullet(self.robot, nq, self.map_joints)
+        return _get_q_from_pybullet(self.robot, nq, self.pb_to_pin_joints)
 
     def update_camera_to_follow_pos(self, x: float, y: float, z: float):
         pb.resetDebugVisualizerCamera(
