@@ -9,7 +9,7 @@ by _Kajita et al., “Biped Walking Pattern Generation by Using Preview Control 
 The animation below shows the controller in action in a Pybullet simulation:
 
 <p align="center">
-  <img src="img/physics_simulation.gif" />
+  <img src="docs/img/physics_simulation.gif" />
 </p>
 
 
@@ -97,7 +97,7 @@ the sole remains parallel to the floor. All phase durations are configurable.
 The figure below shows the generated trajectory for both foot with a height of 20cm:
 
 <p align="center">
-  <img src="img/feet_traj.png" alt="desc" width="460">
+  <img src="docs/img/feet_traj.png" alt="desc" width="460">
 </p>
 
 ---
@@ -133,7 +133,7 @@ This experiment demonstrates the LIPM preview control generating a stable CoM tr
 docker run --rm -it lipm-walking-controller python examples/example_1_lipm_preview_control.py
 ```
 
-![](img/preview_control.gif)
+![](docs/img/preview_control.gif)
 
 ### Example 2: Swing foot trajectory generation 
 
@@ -157,7 +157,7 @@ docker run --rm -it -p 7000:7000 -p 6000:6000 lipm-walking-controller python exa
 ```
 
 <p align="center">
-  <img src="img/inverse_kinematic.gif" />
+  <img src="docs/img/inverse_kinematic.gif" />
 </p>
 
 ### Example 4: Integration in Pybullet
@@ -171,7 +171,7 @@ docker run --rm -it --env DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:ro --device /
 ```
 
 <p align="center">
-  <img src="img/physics_simulation.gif" />
+  <img src="docs/img/physics_simulation.gif" />
 </p>
 
 

@@ -1,5 +1,6 @@
-site_name: Biped Walking Controller
-theme: readthedocs
+site_name: Bipedal Gait Controller
+theme:
+  name: material
 plugins:
   - search
   - mkdocstrings:
@@ -16,8 +17,8 @@ plugins:
             inherited_members: false
             merge_init_into_class: true
 nav:
-  - Home: home.md
-  - Code API:
-      - Preview control: preview_control.md
-      - Inverse kinematic: inverse_kinematics.md
-      - Simulation: simulation.md
+  - Home: index.md
+  - Zero-Moment Point (ZMP) Preview Controller: preview_control.md
+  - Inverse kinematic: inverse_kinematics.md
+  - Simulation: simulation.md
+  - Examples: examples.md
