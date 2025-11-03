@@ -39,13 +39,37 @@ $$
 yielding a feedback + integral + preview law.  
 The resulting controller anticipates future ZMP references, ensuring stable walking trajectories.
 
-The result of the preview controller can be observed on the figure below:
+The result of the preview controller can be observed on the figure below. The upper-left figure shows the trajectory of 
+the CoM in red over time, the generated reference ZMP in blue and the support polygon in green. The upper-right and 
+lower-right igures shows the trajectory of the ZMP and COM over time for x and y pos. Finally, the lower-left figure
+shows the preview gains that are computed.
 
 <p align="center">
-  <img src="../img/physics_simulation.gif" />
+  <img src="../img/preview_control.gif" />
 </p>
 
 ## Example
+
+You can reproduce the example displayed on the figure by launching the script `example_1_lipm_preview_control.py`. We 
+recommend you to use Docker as explained in the installation part:
+
+```bash
+docker run --rm -it lipm-walking-controller python examples/example_1_lipm_preview_control.py
+```
+
+The parameters used in this script are the following:
+
+```python
+dt = 0.005  # Delta of time of the model simulation
+t_preview = 1.6  # Time horizon used for the preview controller
+t_ss = 0.6  # Single support phase time window
+t_ds = 0.4  # Double support phase time window
+t_init = 2.0  # Initialization phase (transition from still position to first step)
+t_end = 1.0 # Final phase (transition from walking to standstill position)
+foot_shape = Polygon(((0.11, 0.05), (0.11, -0.05), (-0.11, -0.05), (-0.11, 0.05))) # Shape of the foot for support poylgon computation
+n_steps = 5 # Number of steps
+l_stride = 0.3 # Length of the stride
+```
 
 ## References
 
