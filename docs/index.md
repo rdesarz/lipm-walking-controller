@@ -21,7 +21,8 @@ The objective is to reproduce and analyze the ZMP preview control pipeline:
 - Apply computed joint positions to the simulated robot in Pybullet
 
 The implementation prioritizes **simplicity** and **experimental reproducibility**, making it suitable for education
-purpose.
+purpose. It relies on [Pinocchio](https://github.com/stack-of-tasks/pinocchio) to handle the kinematics of the robot and
+[PyBullet](https://pybullet.org/wordpress/) for physics simulation.
 
 ## Features
 

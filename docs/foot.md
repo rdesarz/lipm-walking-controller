@@ -1,3 +1,4 @@
+# Foot trajectory generation
 
 # Code API
 
