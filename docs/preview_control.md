@@ -1,3 +1,66 @@
+## Zero Moment Point and Balance Criterion
+
+The Zero Moment Point (ZMP) is the point on the ground where the resultant contact forces between the feet and the 
+ground produce no moment about the horizontal axes. To maintain balance, the ZMP must remain within the robot’s support 
+polygon, defined as the convex hull of the contact areas of the feet. Intuitively, this ensures that the ground reaction
+forces can generate a counteracting moment to keep the feet flat and prevent tipping, maintaining dynamic equilibrium.
+For a more thorough explanation I recommend [this blog post](https://scaron.info/robotics/zero-tilting-moment-point.html) by Stéphane Caron.
+
+## Linear Inverted Pendulum Model
+
+The first step of the controller is to define a reference ZMP trajectory, alternating from one foot to the other at each step.
+The objective is to establish a relationship between the position of this reference ZMP and the robot’s Center of Mass (CoM).
+This relationship can be derived from a simplified model of the robot’s dynamics known as the **Linear Inverted Pendulum Model (LIPM)**.
+
+The LIPM is derived under the following assumptions:
+
+* The mass of the body is concentrated at a single point, the Center of Mass (CoM).  
+* Legs are massless and do not contribute to the system dynamics.  
+* The CoM moves on a horizontal plane at a constant height, eliminating vertical motion coupling.  
+* No angular momentum is generated about the CoM, meaning the upper body remains still to avoid producing additional moments.
+
+Under these assumptions and for small angles, the inverted pendulum dynamics can be linearized, leading to the following second-order linear equation:
+
+$$
+\ddot{x}_c = \frac{g}{z_c} (x_c - x_z)
+$$
+
+where $x_z$ denotes the ZMP, $x_c$ the CoM projection, and $z_c$ the constant CoM height.
+
+## Preview Control
+
+In Kajita's paper, the idea is to use a preview control in order to track and anticipate the ZMP reference change.
+The control input minimizes a quadratic cost over a finite horizon:
+
+$$
+J = \sum_{k=0}^{\infty} \left( Q_e e_k^2 + x_k^T Q_x x_k + R \Delta u_k^2 \right)
+$$
+
+yielding a feedback + integral + preview law.  
+The resulting controller anticipates future ZMP references, ensuring stable walking trajectories.
+
+The result of the preview controller can be observed on the figure below:
+
+<p align="center">
+  <img src="../img/physics_simulation.gif" />
+</p>
+
+## Example
+
+## References
+
+- Kajita, S., Kanehiro, F., Kaneko, K., Fujiwara, K., Harada, K., Yokoi, K., & Hirukawa, H.  
+  *Biped Walking Pattern Generation by Using Preview Control of Zero-Moment Point.*  
+  *Proceedings of the IEEE International Conference on Robotics and Automation (ICRA), 2003.*
+
+- Katayama, T., Ohki, T., Inoue, T., & Kato, T.  
+  *Design of an Optimal Controller for a Discrete-Time System Subject to Previewable Demand.*  
+  *International Journal of Control*, vol. 41, no. 3, pp. 677–699, 1985.
+
+- Caron, S.  
+  *Jacobian of a kinematic task and derivatives on manifolds.*  
+  Available online at  [https://scaron.info/robotics/jacobians.html](scaron.info/robotics/jacobian-of-a-kinematic-task-and-derivatives-on-manifolds.html), accessed 2025.  
+  (Detailed explanations and examples for frame kinematics, Jacobian computation, and task-space control using Pinocchio.)
 
 
 # Code API

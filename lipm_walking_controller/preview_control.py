@@ -6,7 +6,9 @@ from scipy.linalg import solve_discrete_are
 
 def compute_zmp_ref(t, com_initial_pose, steps, ss_t, ds_t, t_init, t_final):
     """
-    Build a piecewise ZMP reference on the ground plane from footsteps.
+    Build a piecewise ZMP reference on the ground plane from footsteps. The ZMP reference starts at com_initial_pose.
+    Then during t_init period of time, the ZMP shift to the right foot. It then goes from a step to another. Then it
+    goes back between the final position of the feet during t_final.
 
     Parameters
     ----------
@@ -73,35 +75,6 @@ def compute_zmp_ref(t, com_initial_pose, steps, ss_t, ds_t, t_init, t_final):
 
 
 @dataclass
-class PreviewControllerMatrices:
-    """
-    Discrete LIPM-with-jerk preview-control matrices.
-
-    Attributes
-    ----------
-    A : ndarray, shape (3, 3)
-        State transition of [x, x_dot, x_ddot] (per-axis).
-    B : ndarray, shape (3, 1)
-        Input matrix for jerk u.
-    C : ndarray, shape (1, 3)
-        Output mapping from state to ZMP.
-    Gi : float or ndarray, shape (1, 1)
-        Integral gain on ZMP tracking error.
-    Gx : ndarray, shape (1, 4)
-        State-feedback gain on [e_int, x, x_dot, x_ddot].
-    Gd : ndarray, shape (P-1,)
-        Preview gains for future ZMP references over P-1 steps.
-    """
-
-    A: np.ndarray
-    B: np.ndarray
-    C: np.ndarray
-    Gi: np.ndarray
-    Gx: np.ndarray
-    Gd: np.ndarray
-
-
-@dataclass
 class PreviewControllerParams:
     """
     Hyperparameters for preview control gain synthesis.
@@ -128,6 +101,36 @@ class PreviewControllerParams:
     Qx: np.ndarray
     R: np.ndarray
     n_preview_steps: int
+
+
+@dataclass
+class PreviewControllerMatrices:
+    """
+    Structure that contains the Discrete LIPM-with-jerk preview-control matrices. Serves as input for the update of the
+    control command.
+
+    Attributes
+    ----------
+    A : ndarray, shape (3, 3)
+        State transition of [x, x_dot, x_ddot] (per-axis).
+    B : ndarray, shape (3, 1)
+        Input matrix for jerk u.
+    C : ndarray, shape (1, 3)
+        Output mapping from state to ZMP.
+    Gi : float or ndarray, shape (1, 1)
+        Integral gain on ZMP tracking error.
+    Gx : ndarray, shape (1, 4)
+        State-feedback gain on [e_int, x, x_dot, x_ddot].
+    Gd : ndarray, shape (P-1,)
+        Preview gains for future ZMP references over P-1 steps.
+    """
+
+    A: np.ndarray
+    B: np.ndarray
+    C: np.ndarray
+    Gi: np.ndarray
+    Gx: np.ndarray
+    Gd: np.ndarray
 
 
 def compute_preview_control_matrices(params: PreviewControllerParams, dt: float):
