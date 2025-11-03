@@ -16,9 +16,17 @@ plugins:
             filters: ["!^_"]
             inherited_members: false
             merge_init_into_class: true
+markdown_extensions:
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 nav:
   - Home: index.md
   - Zero-Moment Point (ZMP) Preview Controller: preview_control.md
-  - Inverse kinematic: inverse_kinematics.md
+  - Foot trajectory generation: foot.md
+  - Inverse kinematics: inverse_kinematics.md
   - Simulation: simulation.md
   - Examples: examples.md

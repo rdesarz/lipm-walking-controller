@@ -1,4 +1,6 @@
-## Zero-Moment Point (ZMP) Preview Controller
+
+
+# Code API
 
 ::: lipm_walking_controller.preview_control
     options:
