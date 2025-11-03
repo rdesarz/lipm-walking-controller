@@ -4,7 +4,7 @@ theme:
   name: material
   palette:
     primary: blue grey
-
+copyright: Copyright &copy; 2025 Romain Desarzens
 plugins:
   - search
   - mkdocstrings:
