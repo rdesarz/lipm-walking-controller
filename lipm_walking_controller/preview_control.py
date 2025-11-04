@@ -4,7 +4,23 @@ import numpy as np
 from scipy.linalg import solve_discrete_are
 
 
-def compute_zmp_ref(t, com_initial_pose, steps, ss_t, ds_t, t_init, t_final):
+def linear_interpolation(t: np.ndarray, pos_begin: np.ndarray, pos_end: np.ndarray) -> np.ndarray:
+    return (1 - t)[:, None] * pos_begin + t[:, None] * pos_end
+
+
+def cubic_spline_interpolation(
+    t: np.ndarray, pos_begin: np.ndarray, pos_end: np.ndarray
+) -> np.ndarray:
+    return (
+        pos_begin
+        + 3.0 * (pos_end - pos_begin) * np.square(t)[:, None]
+        - 2.0 * (pos_end - pos_begin) * np.pow(t, 3)[:, None]
+    )
+
+
+def compute_zmp_ref(
+    t, com_initial_pose, steps, ss_t, ds_t, t_init, t_final, interp_fn=cubic_spline_interpolation
+):
     """
     Build a piecewise ZMP reference on the ground plane from footsteps. The ZMP reference starts at com_initial_pose.
     Then during t_init period of time, the ZMP shift to the right foot. It then goes from a step to another. Then it
@@ -59,7 +75,7 @@ def compute_zmp_ref(t, com_initial_pose, steps, ss_t, ds_t, t_init, t_final):
         # Add double support phase
         mask = (t >= t_start + ss_t) & (t < t_start + ss_t + ds_t)
         alpha = (t[mask] - (t_start + ss_t)) / ds_t
-        zmp_ref[mask, :] = (1 - alpha)[:, None] * current_step + alpha[:, None] * next_step
+        zmp_ref[mask, :] = interp_fn(alpha, current_step, next_step)
 
     # Last phase: SS on last-but-one, then blend to midpoint of last two
     t_start = t_init + (len(steps) - 2) * (ss_t + ds_t)
