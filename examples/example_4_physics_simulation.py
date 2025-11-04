@@ -16,7 +16,10 @@ from lipm_walking_controller.preview_control import (
     compute_preview_control_matrices,
     update_control,
     compute_zmp_ref,
+    linear_interpolation,
+    cubic_spline_interpolation,
 )
+
 from lipm_walking_controller.model import Talos, q_from_base_and_joints
 
 from lipm_walking_controller.simulation import (
@@ -42,7 +45,7 @@ def main():
     t_ds = 0.8  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
     t_end = 1.0
-    n_steps = 51  # Number of steps executed by the robot
+    n_steps = 15  # Number of steps executed by the robot
     l_stride = 0.1  # Length of the stride
     max_height_foot = 0.01  # Maximal height of the swing foot
 
@@ -174,7 +177,16 @@ def main():
         max_height_foot,
     )
 
-    zmp_ref = compute_zmp_ref(t, com_initial_target[0:2], steps_pose, t_ss, t_ds, t_init, t_end)
+    zmp_ref = compute_zmp_ref(
+        t=t,
+        com_initial_pose=com_initial_target[0:2],
+        steps=steps_pose,
+        ss_t=t_ss,
+        ds_t=t_ds,
+        t_init=t_init,
+        t_final=t_end,
+        interp_fn=cubic_spline_interpolation,
+    )
 
     zmp_padded = np.vstack(
         [zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)]
