@@ -16,7 +16,6 @@ from lipm_walking_controller.preview_control import (
     compute_preview_control_matrices,
     update_control,
     compute_zmp_ref,
-    linear_interpolation,
     cubic_spline_interpolation,
 )
 

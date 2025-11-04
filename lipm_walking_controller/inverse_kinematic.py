@@ -55,7 +55,7 @@ class InvKinSolverParams:
     locked_joints: typing.Optional[typing.List[int]] = None
 
 
-def se3_task_error_and_jacobian(model, data, q, frame_id, M_des):
+def _se3_task_error_and_jacobian(model, data, q, frame_id, M_des):
     """
     Compute 6D right-invariant pose error and task Jacobian for a frame.
 
