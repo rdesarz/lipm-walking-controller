@@ -1,25 +1,31 @@
 ## Zero Moment Point and Balance Criterion
 
-The Zero Moment Point (ZMP) is the point on the ground where the resultant contact forces between the feet and the 
-ground produce no moment about the horizontal axes. To maintain balance, the ZMP must remain within the robot’s support 
+The Zero Moment Point (ZMP) is the point on the ground where the resultant contact forces between the feet and the
+ground produce no moment about the horizontal axes. To maintain balance, the ZMP must remain within the robot’s support
 polygon, defined as the convex hull of the contact areas of the feet. Intuitively, this ensures that the ground reaction
 forces can generate a counteracting moment to keep the feet flat and prevent tipping, maintaining dynamic equilibrium.
-For a more thorough explanation I recommend [this blog post](https://scaron.info/robotics/zero-tilting-moment-point.html) by Stéphane Caron.
+For a more thorough explanation I
+recommend [this blog post](https://scaron.info/robotics/zero-tilting-moment-point.html) by Stéphane Caron.
 
 ## Linear Inverted Pendulum Model
 
-The first step of the controller is to define a reference ZMP trajectory, alternating from one foot to the other at each step.
-The objective is to establish a relationship between the position of this reference ZMP and the robot’s Center of Mass (CoM).
-This relationship can be derived from a simplified model of the robot’s dynamics known as the **Linear Inverted Pendulum Model (LIPM)**.
+The first step of the controller is to define a reference ZMP trajectory, alternating from one foot to the other at each
+step.
+The objective is to establish a relationship between the position of this reference ZMP and the robot’s Center of Mass (
+CoM).
+This relationship can be derived from a simplified model of the robot’s dynamics known as the **Linear Inverted Pendulum
+Model (LIPM)**.
 
 The LIPM is derived under the following assumptions:
 
-* The mass of the body is concentrated at a single point, the Center of Mass (CoM).  
-* Legs are massless and do not contribute to the system dynamics.  
-* The CoM moves on a horizontal plane at a constant height, eliminating vertical motion coupling.  
-* No angular momentum is generated about the CoM, meaning the upper body remains still to avoid producing additional moments.
+* The mass of the body is concentrated at a single point, the Center of Mass (CoM).
+* Legs are massless and do not contribute to the system dynamics.
+* The CoM moves on a horizontal plane at a constant height, eliminating vertical motion coupling.
+* No angular momentum is generated about the CoM, meaning the upper body remains still to avoid producing additional
+  moments.
 
-Under these assumptions and for small angles, the inverted pendulum dynamics can be linearized, leading to the following second-order linear equation:
+Under these assumptions and for small angles, the inverted pendulum dynamics can be linearized, leading to the following
+second-order linear equation:
 
 $$
 \ddot{x}_c = \frac{g}{z_c} (x_c - x_z)
@@ -39,8 +45,8 @@ $$
 yielding a feedback + integral + preview law.  
 The resulting controller anticipates future ZMP references, ensuring stable walking trajectories.
 
-The result of the preview controller can be observed on the figure below. The upper-left figure shows the trajectory of 
-the CoM in red over time, the generated reference ZMP in blue and the support polygon in green. The upper-right and 
+The result of the preview controller can be observed on the figure below. The upper-left figure shows the trajectory of
+the CoM in red over time, the generated reference ZMP in blue and the support polygon in green. The upper-right and
 lower-right igures shows the trajectory of the ZMP and COM over time for x and y pos. Finally, the lower-left figure
 shows the preview gains that are computed.
 
@@ -50,7 +56,7 @@ shows the preview gains that are computed.
 
 ## Example
 
-You can reproduce the example displayed on the figure by launching the script `example_1_lipm_preview_control.py`. We 
+You can reproduce the example displayed on the figure by launching the script `example_1_lipm_preview_control.py`. We
 recommend you to use Docker as explained in the installation part:
 
 ```bash
@@ -65,10 +71,11 @@ t_preview = 1.6  # Time horizon used for the preview controller
 t_ss = 0.6  # Single support phase time window
 t_ds = 0.4  # Double support phase time window
 t_init = 2.0  # Initialization phase (transition from still position to first step)
-t_end = 1.0 # Final phase (transition from walking to standstill position)
-foot_shape = Polygon(((0.11, 0.05), (0.11, -0.05), (-0.11, -0.05), (-0.11, 0.05))) # Shape of the foot for support poylgon computation
-n_steps = 5 # Number of steps
-l_stride = 0.3 # Length of the stride
+t_end = 1.0  # Final phase (transition from walking to standstill position)
+foot_shape = Polygon(
+    ((0.11, 0.05), (0.11, -0.05), (-0.11, -0.05), (-0.11, 0.05)))  # Shape of the foot for support poylgon computation
+n_steps = 5  # Number of steps
+l_stride = 0.3  # Length of the stride
 ```
 
 ## References
@@ -82,14 +89,15 @@ l_stride = 0.3 # Length of the stride
   *International Journal of Control*, vol. 41, no. 3, pp. 677–699, 1985.
 
 - Caron, S.  
-  *Jacobian of a kinematic task and derivatives on manifolds.*  
-  Available online at  [https://scaron.info/robotics/jacobians.html](scaron.info/robotics/jacobian-of-a-kinematic-task-and-derivatives-on-manifolds.html), accessed 2025.  
-  (Detailed explanations and examples for frame kinematics, Jacobian computation, and task-space control using Pinocchio.)
-
+  *Zero-tilting moment point.*  
+  Available online
+  at  [https://scaron.info/robotics/zero-tilting-moment-point.html](https://scaron.info/robotics/zero-tilting-moment-point.html),
+  accessed 2025.  
+  (Detailed explanations and examples for Zero-tilting moment point)
 
 # Code API
 
 ::: lipm_walking_controller.preview_control
-    options:
-      members_order: source
-      heading_level: 2
+options:
+members_order: source
+heading_level: 2
