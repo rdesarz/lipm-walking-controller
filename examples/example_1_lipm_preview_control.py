@@ -7,6 +7,8 @@ from lipm_walking_controller.preview_control import (
     compute_preview_control_matrices,
     update_control,
     PreviewControllerParams,
+    linear_interpolation,
+    cubic_spline_interpolation,
 )
 
 from lipm_walking_controller.foot import get_active_polygon, compute_feet_path_and_poses
@@ -53,7 +55,7 @@ if __name__ == "__main__":
     )
 
     # Build ZMP reference to track
-    zmp_ref = compute_zmp_ref(t, com_initial_pose, steps_pose, t_ss, t_ds, t_init, 2.0)
+    zmp_ref = compute_zmp_ref(t, com_initial_pose, steps_pose, t_ss, t_ds, t_init, t_end)
 
     # Initialize controller
     ctrler_params = PreviewControllerParams(
