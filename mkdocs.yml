@@ -29,6 +29,7 @@ extra_javascript:
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 nav:
   - Home: index.md
+  - Getting started: getting_started.md
   - Zero-Moment Point (ZMP) Preview Controller: preview_control.md
   - Foot trajectory generation: foot.md
   - Inverse kinematics: inverse_kinematics.md

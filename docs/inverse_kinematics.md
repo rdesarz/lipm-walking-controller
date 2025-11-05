@@ -79,7 +79,7 @@ level.
 
 ### 2. Swing (Moving) Foot 
 
-Residual and Jacobian `(e_mf, J_mf)` enter the cost as a weighted least squares term, allowing the swing foot to track
+Residual and Jacobian $e_{mf}, J_{mf}$ enter the cost as a weighted least squares term, allowing the swing foot to track
 its desired trajectory.
 
 ### 3. Torso Orientation
@@ -96,11 +96,10 @@ This aligns the torso without constraining its position.
 ### 4. Center of Mass
 
 The center of mass is only constrained by its position. This is modelled as a cost in the optimization problem. The 
-jacobian
+jacobian $J_{\text{com}}$ is the jacobian of the center of mass. The residual is defined below:
 
 \[
 e_{\text{com}} = (x_{\text{com}}^{\star} - x_{\text{com}}), \quad
-J_{\text{com}} = \text{jacobianCenterOfMass}(q)
 \]
 
 This task pulls the CoM toward the desired position.
@@ -109,26 +108,54 @@ This task pulls the CoM toward the desired position.
 
 ## Optimization Problem
 
-Solve for `dq` (over active velocity indices) the QP:
+Solve for $\Delta q$ (over active velocity indices) the QP:
 
-\[
+\begin{equation}
 \begin{aligned}
-\min_{dq} \quad &
-\| \sqrt{w_{\text{com}}}\,(J_{\text{com}} dq - e_{\text{com}})\|^2 \\
-&+ \| \sqrt{w_{\text{torso}}}\,(J_{\text{torso}} dq - e_{\text{torso}})\|^2 \\
-&+ \| \sqrt{w_{\text{mf}}}\,(J_{\text{mf}} dq - e_{\text{mf}})\|^2 \\
-&+ \mu\, \|dq\|^2 \\
-\text{s.t.} \quad & J_{\text{ff}} dq = e_{\text{ff}}
+\min_{\Delta q}\quad & \tfrac{1}{2}\,\Delta q^\top H \Delta q + g^\top \Delta q \\
+\text{s.t.}\quad & A \Delta q = b
 \end{aligned}
-\]
+\label{eq:qp_eq_only}
+\end{equation}
 
-- The term `μ‖dq‖²` provides Tikhonov damping.
-- The stance foot equality ensures kinematic contact consistency.
-- The cost terms balance CoM, swing foot, and torso tracking.
+where
+
+\begin{align}
+H &= 
+J_{\mathrm{com}}^\top W_{\mathrm{com}} J_{\mathrm{com}}
++ J_{\mathrm{torso}}^\top W_{\mathrm{torso}} J_{\mathrm{torso}}
++ J_{\mathrm{mf}}^\top W_{\mathrm{mf}} J_{\mathrm{mf}}
++ \mu I, \\[12pt]
+g &= 
+- J_{\mathrm{com}}^\top W_{\mathrm{com}} e_{\mathrm{com}}
+- J_{\mathrm{torso}}^\top W_{\mathrm{torso}} e_{\mathrm{torso}}
+- J_{\mathrm{mf}}^\top W_{\mathrm{mf}} e_{\mathrm{mf}},
+\end{align}
+
+and
+
+\begin{align}
+A &= J_{ff}  &  b &= e_{ff}
+\end{align} 
+
+- The term $\lambda I$ provides Tikhonov damping to improve numerical stability
 
 This is solved with `qpsolvers.solve_qp` (OSQP backend).
 
 ---
+
+## Example
+
+Inverse kinematics are computed to track CoM and foot trajectories using the Talos model.
+This produces a full kinematic walking sequence without dynamic simulation.
+
+```bash
+docker run --rm -it -p 7000:7000 -p 6000:6000 lipm-walking-controller python examples/example_3_walk_inverse_kinematic.py --path-talos-data "/"
+```
+
+<p align="center">
+  <img src="../img/inverse_kinematic.gif" />
+</p>
 
 ## References
 
@@ -147,19 +174,15 @@ This is solved with `qpsolvers.solve_qp` (OSQP backend).
   accessed 2025.  
   (General introduction to differential inverse kinematics.)
 
-  - @software{pink,
-  title = {{Pink: Python inverse kinematics based on Pinocchio}},
-  author = {Caron, Stéphane and De Mont-Marin, Yann and Budhiraja, Rohan and Bang, Seung Hyeon and Domrachev, Ivan and
-  Nedelchev, Simeon and peterd-NV, github user and Vaillant, Joris},
-  license = {Apache-2.0},
-  url = {https://github.com/stephane-caron/pink},
-  version = {3.4.0},
-  year = {2025}
-  }
+- Caron, S.  
+  *Pink: Python inverse kinematics based on Pinocchio*   
+  License Apache-2.0   
+  Available at https://github.com/stephane-caron/pink 
+  2025
 
 # Code API
 
 ::: lipm_walking_controller.inverse_kinematic
-options:
-members_order: source
-heading_level: 2
+    options:
+        members_order: source
+        heading_level: 2
