@@ -32,7 +32,7 @@ flowchart TD
     foot["Foot trajectory generation"]
     inverse_kin["Inverse kinematics"]
     sim["Simulator"]
-    zmp_ref --> zmp_preview --> foot --> inverse_kin --> sim
+    zmp_ref -->|"ZMP trajectory"| zmp_preview -->|"CoM trajectory"| foot -->|"Foot trajectory"| inverse_kin -->|"Joints position"| sim
 ```
 
 </div>
