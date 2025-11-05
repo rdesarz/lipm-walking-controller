@@ -56,11 +56,11 @@ shows the preview gains that are computed.
 
 ## Example
 
-You can reproduce the example displayed on the figure by launching the script `example_1_lipm_preview_control.py`. We
+You can reproduce the example displayed on the figure by launching the script `example_1_biped_preview_control.py`. We
 recommend you to use Docker as explained in the installation part:
 
 ```bash
-docker run --rm -it lipm-walking-controller python examples/example_1_lipm_preview_control.py
+docker run --rm -it biped-walking-controller python examples/example_1_biped_preview_control.py
 ```
 
 The parameters used in this script are the following:
@@ -97,7 +97,7 @@ l_stride = 0.3  # Length of the stride
 
 # Code API
 
-::: lipm_walking_controller.preview_control
+::: biped_walking_controller.preview_control
 options:
 members_order: source
 heading_level: 2

@@ -23,7 +23,7 @@ docker run --rm -it \
   --env DISPLAY \
   -v /tmp/.X11-unix:/tmp/.X11-unix:ro \
   --device /dev/dri:/dev/dri \
-  lipm-walking-controller \
+  biped-walking-controller \
   python examples/example_4_physics_simulation.py \
   --path-talos-data --launch-gui --plot-results
 ```
@@ -44,7 +44,7 @@ The simulation module provides all components required to initialize and manage 
 interaction with the robot, including data extraction and joint configuration. The Simulator class currently implements 
 this interface using PyBullet as the physics backend.
 
-::: lipm_walking_controller.simulation
+::: biped_walking_controller.simulation
     options:
       members_order: source
       heading_level: 2

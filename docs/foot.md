@@ -24,7 +24,7 @@ You can reproduce the example displayed on the figure by launching the script `e
 recommend you to use Docker as explained in the installation part:
 
 ```bash
-docker run --rm -it lipm-walking-controller python examples/example_2_feet_motion.py
+docker run --rm -it biped-walking-controller python examples/example_2_feet_motion.py
 ```
 
 The parameters used in this script are the following:
@@ -44,7 +44,7 @@ max_height_foot = 0.2 # Maximal height of the foot during motion of the swing fo
 
 # Code API
 
-::: lipm_walking_controller.foot
+::: biped_walking_controller.foot
     options:
       members_order: source
       heading_level: 2

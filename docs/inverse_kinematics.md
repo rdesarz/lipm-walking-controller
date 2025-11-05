@@ -151,7 +151,7 @@ Inverse kinematics are computed to track CoM and foot trajectories using the Tal
 This produces a full kinematic walking sequence without dynamic simulation:
 
 ```bash
-docker run --rm -it -p 7000:7000 -p 6000:6000 lipm-walking-controller python examples/example_3_walk_inverse_kinematic.py --path-talos-data "/"
+docker run --rm -it -p 7000:7000 -p 6000:6000 biped-walking-controller python examples/example_3_walk_inverse_kinematic.py --path-talos-data "/"
 ```
 
 The result should look like this:
@@ -185,7 +185,7 @@ The result should look like this:
 
 # Code API
 
-::: lipm_walking_controller.inverse_kinematic
+::: biped_walking_controller.inverse_kinematic
     options:
         members_order: source
         heading_level: 2
