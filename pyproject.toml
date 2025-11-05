@@ -48,8 +48,8 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/rdesarz/lipm-walking-controller"
-Issues = "https://github.com/rdesarz/lipm-walking-controller/issues"
+Homepage = "https://github.com/rdesarz/biped-walking-controller"
+Issues = "https://github.com/rdesarz/biped-walking-controller/issues"
 
 [tool.black]
 line-length = 100
