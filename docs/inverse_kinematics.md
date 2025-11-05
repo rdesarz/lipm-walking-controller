@@ -42,6 +42,9 @@ The stance foot is a hard equality constraint in the QP:
 J_{\text{ff}}\, \Delta q = e_{\text{ff}}
 \]
 
+where $J_{\text{ff}}$ is the Jacobian of the fixed foot kinematic task, $\Delta q$ the joint-space increment,
+and $e_{\text{ff}}$ the pose task residual.
+
 This constraint ensures the stance foot remains fixed in the world frame. It enforces a no-slip contact at velocity
 level.
 
@@ -76,7 +79,7 @@ This task pulls the CoM toward the desired position.
 
 ## Optimization Problem
 
-We want to solve for $\Delta q$ (joint displacements that matches the joint velocities) the QP:
+We want to solve for $\Delta q$ the QP:
 
 \begin{equation}
 \begin{aligned}

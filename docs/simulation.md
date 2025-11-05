@@ -3,8 +3,7 @@
 ## Introduction
 
 The simulation module validates the entire walking control pipeline, from ZMP-based pattern generation to joint-space 
-motion execution. It provides a reproducible environment to test the controller under realistic dynamics before 
-deployment on hardware.
+motion execution. It provides a reproducible environment to test the controller under realistic dynamics.
 The robot is simulated in PyBullet, which integrates forward dynamics and computes contact forces during each support 
 phase. The module reproduces the walking sequence defined by the preview controller, including single and double support 
 phases, ZMP transitions, and foot exchanges. The reference trajectories of the center of mass (CoM) and feet are generated 
