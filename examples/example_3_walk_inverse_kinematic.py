@@ -4,17 +4,17 @@ from time import sleep, clock_gettime
 import numpy as np
 import pinocchio as pin
 
-from lipm_walking_controller.preview_control import (
+from biped_walking_controller.preview_control import (
     compute_preview_control_matrices,
     compute_zmp_ref,
     update_control,
     PreviewControllerParams,
 )
 
-from lipm_walking_controller.foot import compute_feet_path_and_poses
-from lipm_walking_controller.inverse_kinematic import solve_inverse_kinematics, InvKinSolverParams
-from lipm_walking_controller.model import Talos
-from lipm_walking_controller.visualizer import Visualizer
+from biped_walking_controller.foot import compute_feet_path_and_poses
+from biped_walking_controller.inverse_kinematic import solve_inverse_kinematics, InvKinSolverParams
+from biped_walking_controller.model import Talos
+from biped_walking_controller.visualizer import Visualizer
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()

@@ -1,7 +1,7 @@
 # tests/test_preview_control_unittest.py
 import unittest
 import numpy as np
-from lipm_walking_controller.preview_control import (
+from biped_walking_controller.preview_control import (
     PreviewControllerParams,
     compute_preview_control_matrices,
 )

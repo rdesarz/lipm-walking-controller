@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from shapely import Polygon
 
-from lipm_walking_controller.preview_control import (
+from biped_walking_controller.preview_control import (
     compute_zmp_ref,
     compute_preview_control_matrices,
     update_control,
@@ -11,7 +11,7 @@ from lipm_walking_controller.preview_control import (
     cubic_spline_interpolation,
 )
 
-from lipm_walking_controller.foot import get_active_polygon, compute_feet_path_and_poses
+from biped_walking_controller.foot import get_active_polygon, compute_feet_path_and_poses
 
 if __name__ == "__main__":
     # Parameters

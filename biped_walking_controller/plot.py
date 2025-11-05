@@ -1,4 +1,4 @@
-from lipm_walking_controller.foot import (
+from biped_walking_controller.foot import (
     compute_double_support_polygon,
     compute_single_support_polygon,
 )

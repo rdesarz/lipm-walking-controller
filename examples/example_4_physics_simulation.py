@@ -6,12 +6,12 @@ import numpy as np
 import pybullet as pb
 import pinocchio as pin
 
-from lipm_walking_controller.foot import compute_feet_path_and_poses
+from biped_walking_controller.foot import compute_feet_path_and_poses
 
-from lipm_walking_controller.inverse_kinematic import InvKinSolverParams, solve_inverse_kinematics
-from lipm_walking_controller.plot import plot_feet_and_com
+from biped_walking_controller.inverse_kinematic import InvKinSolverParams, solve_inverse_kinematics
+from biped_walking_controller.plot import plot_feet_and_com
 
-from lipm_walking_controller.preview_control import (
+from biped_walking_controller.preview_control import (
     PreviewControllerParams,
     compute_preview_control_matrices,
     update_control,
@@ -19,9 +19,9 @@ from lipm_walking_controller.preview_control import (
     cubic_spline_interpolation,
 )
 
-from lipm_walking_controller.model import Talos, q_from_base_and_joints
+from biped_walking_controller.model import Talos, q_from_base_and_joints
 
-from lipm_walking_controller.simulation import (
+from biped_walking_controller.simulation import (
     _snap_feet_to_plane,
     _compute_base_from_foot_target,
     Simulator,
