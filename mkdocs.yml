@@ -1,4 +1,4 @@
-site_name: Bipedal Gait Controller
+site_name: Biped Walking Controller
 repo_url: https://github.com/rdesarz/lipm-walking-controller.git
 theme:
   name: material

@@ -1,4 +1,4 @@
-# Bipedal Gait Controller
+# Biped Walking Controller
 
 This project presents an open-source Python implementation of the **Linear Inverted Pendulum Model (LIPM)** walking pattern 
 generator based on **preview control of the Zero-Moment Point (ZMP)**, following the formulation introduced 
