@@ -1,4 +1,4 @@
-# Biped Walking Controller
+# Bipedal Walking Controller
 
 [![Build and tests](https://github.com/rdesarz/lipm-walking-controller/actions/workflows/build.yml/badge.svg)](https://github.com/rdesarz/lipm-walking-controller/actions/workflows/build.yml)
 
