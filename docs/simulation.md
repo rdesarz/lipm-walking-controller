@@ -24,7 +24,8 @@ docker run --rm -it \
   -v /tmp/.X11-unix:/tmp/.X11-unix:ro \
   --device /dev/dri:/dev/dri \
   biped-walking-controller \
-  python examples/example_1_lipm_preview_control.py 
+  python examples/example_4_physics_simulation.py \
+  --path-talos-data "/" --launch-gui --plot-results
 ```
 
 You should get a visualization of the simulation such as the one below:

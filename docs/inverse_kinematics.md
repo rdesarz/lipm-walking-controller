@@ -130,7 +130,7 @@ docker run --rm -it -p 7000:7000 \
   --path-talos-data "/"
 ```
 
-Then go to the following address in your browser: http://127.0.0.1:7000/static/.
+Then go to the following address in your browser: [http://127.0.0.1:7000/static/](http://127.0.0.1:7000/static/).
 
 The result should look like this:
 
