@@ -147,11 +147,14 @@ This is solved with `qpsolvers.solve_qp` (OSQP backend).
 ## Example
 
 Inverse kinematics are computed to track CoM and foot trajectories using the Talos model.
-This produces a full kinematic walking sequence without dynamic simulation.
+
+This produces a full kinematic walking sequence without dynamic simulation:
 
 ```bash
 docker run --rm -it -p 7000:7000 -p 6000:6000 lipm-walking-controller python examples/example_3_walk_inverse_kinematic.py --path-talos-data "/"
 ```
+
+The result should look like this:
 
 <p align="center">
   <img src="../img/inverse_kinematic.gif" />

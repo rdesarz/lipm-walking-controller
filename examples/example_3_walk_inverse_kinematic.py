@@ -98,7 +98,7 @@ if __name__ == "__main__":
         data=talos.data,
         w_torso=10.0,
         w_com=10.0,
-        w_mf=1000.0,
+        w_mf=100.0,
         mu=1e-5,
         dt=dt,
     )
