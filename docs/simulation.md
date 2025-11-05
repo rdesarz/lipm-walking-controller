@@ -31,7 +31,7 @@ docker run --rm -it \
 You should get a visualization of the simulation such as the one below:
 
 <p align="center">
-  <img src="/img/physics_simulation.gif" />
+  <img src="../img/physics_simulation.gif" />
 </p>
 
 At the end of the walking sequence, two plots are displayed to compare reference and simulated trajectories.

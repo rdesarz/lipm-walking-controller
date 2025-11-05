@@ -51,7 +51,7 @@ lower-right igures shows the trajectory of the ZMP and COM over time for x and y
 shows the preview gains that are computed.
 
 <p align="center">
-  <img src="/img/preview_control.gif" />
+  <img src="../img/preview_control.gif" />
 </p>
 
 ## Example
