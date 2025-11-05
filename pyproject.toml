@@ -3,7 +3,7 @@ requires = ["hatchling >= 1.26"]
 build-backend = "hatchling.build"
 
 [project]
-name = "lipm-walking-controller"
+name = "biped-walking-controller"
 version = "0.1.0"
 description = "LIPM preview control, footstep and IK/QP building blocks for biped walking demos."
 readme = "README.md"

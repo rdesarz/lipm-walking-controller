@@ -1,5 +1,5 @@
 site_name: Biped Walking Controller
-repo_url: https://github.com/rdesarz/lipm-walking-controller.git
+repo_url: https://github.com/rdesarz/biped-walking-controller.git
 theme:
   name: material
   palette:
