@@ -38,6 +38,8 @@ The objective is to reproduce and analyze the ZMP preview control pipeline:
 The implementation prioritizes **simplicity** and **experimental reproducibility**, making it suitable for education
 purpose.
 
+A documentation is available [here](https://rdesarz.github.io/biped-walking-controller/)
+
 ---
 
 ## Methodology
