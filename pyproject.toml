@@ -29,12 +29,7 @@ dependencies = [
   # Pinocchio: pip package name is `pin`. Prefer conda-forge/apt if pip wheels are unavailable.
   "pin>=2.7",
   "pybullet>=3.2",
-  "mkdocstrings[python]>=0.18",
 ]
-
-[project.urls]
-Homepage = "https://github.com/rdesarz/lipm-walking-controller"
-Issues = "https://github.com/rdesarz/lipm-walking-controller/issues"
 
 [project.optional-dependencies]
 dev = [
@@ -52,6 +47,12 @@ docs = [
   "mkdocstrings>=0.25",
   "mkdocstrings-python>=1.10",
 ]
+
+[project.urls]
+Homepage = "https://github.com/rdesarz/lipm-walking-controller"
+Issues = "https://github.com/rdesarz/lipm-walking-controller/issues"
+
+
 
 [tool.black]
 line-length = 100
