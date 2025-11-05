@@ -157,7 +157,7 @@ docker run --rm -it -p 7000:7000 -p 6000:6000 lipm-walking-controller python exa
 The result should look like this:
 
 <p align="center">
-  <img src="../img/inverse_kinematic.gif" />
+  <img src="/img/inverse_kinematic.gif" />
 </p>
 
 ## References

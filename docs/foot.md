@@ -15,7 +15,7 @@ the sole remains parallel to the floor. All phase durations are configurable.
 The figure below shows the generated trajectory for both foot with a height of 20cm:
 
 <p align="center">
-  <img src="../img/feet_traj.png" alt="desc" width="460">
+  <img src="/img/feet_traj.png" alt="desc" width="460">
 </p>
 
 ## Example

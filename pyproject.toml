@@ -30,7 +30,6 @@ dependencies = [
   "pin>=2.7",
   "pybullet>=3.2",
 ]
-
 [project.optional-dependencies]
 dev = [
   "black>=24.3",
@@ -51,8 +50,6 @@ docs = [
 [project.urls]
 Homepage = "https://github.com/rdesarz/lipm-walking-controller"
 Issues = "https://github.com/rdesarz/lipm-walking-controller/issues"
-
-
 
 [tool.black]
 line-length = 100
