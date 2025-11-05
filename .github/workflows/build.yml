@@ -73,4 +73,4 @@ jobs:
       - name: Install project dependencies
         run: pip install ".[docs]"
       - name: Deploy documentation
-        run: mkdocs gh-deploy
+        run: mkdocs gh-deploy --force
