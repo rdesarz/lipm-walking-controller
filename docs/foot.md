@@ -24,7 +24,13 @@ You can reproduce the example displayed on the figure by launching the script `e
 recommend you to use Docker as explained in the installation part:
 
 ```bash
-docker run --rm -it biped-walking-controller python examples/example_2_feet_motion.py
+xhost +local:root
+docker run --rm -it \
+  --env DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix:ro \
+  --device /dev/dri:/dev/dri \
+  biped-walking-controller \
+  python examples/example_2_feet_motion.py 
 ```
 
 The parameters used in this script are the following:
