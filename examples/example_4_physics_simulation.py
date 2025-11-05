@@ -295,7 +295,7 @@ def main():
             com_ref_pos=com_ref_pos,
             com_pb_pos=com_pb_pos,
             com_pin_pos=com_pin_pos,
-            zmp_pos=zmp_pos,
+            zmp_pos=np.zeros(com_pin_pos.shape),
         )
 
     # Infinite loop to display the ending position

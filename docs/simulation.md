@@ -15,10 +15,11 @@ positions are then computed and applied through position control, ensuring consi
 
 ## Example
 
-In this example, the controller and inverse-kinematics modules are integrated into PyBullet to test the walking pattern in a simulated environment:
+In this example, the controller and inverse-kinematics modules are integrated into PyBullet to test the walking pattern in a simulated environment.
+The `xhost` command is only required if you want to display the GUI interface:
 
 ```bash
-xhost +
+xhost +local:root
 docker run --rm -it \
   --env DISPLAY \
   -v /tmp/.X11-unix:/tmp/.X11-unix:ro \
@@ -34,9 +35,9 @@ You should get a visualization of the simulation such as the one below:
   <img src="../img/physics_simulation.gif" />
 </p>
 
-At the end of the walking sequence, two plots are displayed to compare reference and simulated trajectories.
+At the end of the walking sequence, a plot should be displayed. It plots the position of the CoM and foot trajectories on x and y axis:
 
-
+![walking_x_y_plot.png](../img/walking_x_y_plot.png)
 
 # Code API
 
