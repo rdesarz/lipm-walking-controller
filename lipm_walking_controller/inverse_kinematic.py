@@ -203,17 +203,17 @@ def solve_inverse_kinematics(
     e_com = com_target - com
 
     # Fixed foot
-    e_ff, J_ff = se3_task_error_and_jacobian(
+    e_ff, J_ff = _se3_task_error_and_jacobian(
         model, data, q, params.fixed_foot_frame, oMf_fixed_foot
     )
 
     # Moving foot
-    e_mf, J_mf = se3_task_error_and_jacobian(
+    e_mf, J_mf = _se3_task_error_and_jacobian(
         model, data, q, params.moving_foot_frame, oMf_moving_foot
     )
 
     # Torso (only angular part)
-    e_torso6, J_torso6 = se3_task_error_and_jacobian(model, data, q, params.torso_frame, oMf_torso)
+    e_torso6, J_torso6 = _se3_task_error_and_jacobian(model, data, q, params.torso_frame, oMf_torso)
     S = np.zeros((3, 6))
     S[0, 3] = S[1, 4] = S[2, 5] = 1.0
     e_torso = S @ e_torso6
