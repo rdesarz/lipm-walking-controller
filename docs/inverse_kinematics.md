@@ -119,8 +119,9 @@ desired joints position.
 ## Example
 
 Inverse kinematics are computed to track CoM and foot trajectories using the Talos model.
+This produces a full kinematic walking sequence without dynamic simulation.
 
-This produces a full kinematic walking sequence without dynamic simulation:
+Run the following command:
 
 ```bash
 docker run --rm -it -p 7000:7000 \
@@ -128,6 +129,8 @@ docker run --rm -it -p 7000:7000 \
   python examples/example_3_walk_inverse_kinematic.py \
   --path-talos-data "/"
 ```
+
+Then go to the following address in your browser: http://127.0.0.1:7000/static/.
 
 The result should look like this:
 
