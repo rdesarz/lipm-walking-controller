@@ -140,7 +140,8 @@ A &= J_{ff}  &  b &= e_{ff}
 
 - The term $\lambda I$ provides Tikhonov damping to improve numerical stability
 
-This is solved with `qpsolvers.solve_qp` (OSQP backend).
+This is solved with `qpsolvers.solve_qp` (OSQP backend). The solution is then integrated using Pinocchio to compute the 
+desired joints position.
 
 ---
 
@@ -157,7 +158,7 @@ docker run --rm -it -p 7000:7000 -p 6000:6000 biped-walking-controller python ex
 The result should look like this:
 
 <p align="center">
-  <img src="/img/inverse_kinematic.gif" />
+  <img src="../img/inverse_kinematic.gif" />
 </p>
 
 ## References

@@ -7,7 +7,7 @@ by _Kajita et al., “Biped Walking Pattern Generation by Using Preview Control 
 The animation below shows the controller in action in a Pybullet simulation:
 
 <p align="center">
-  <img src="/img/physics_simulation.gif" />
+  <img src="img/physics_simulation.gif" />
 </p>
 
 ## Overview
