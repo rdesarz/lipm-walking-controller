@@ -20,6 +20,23 @@ The objective is to reproduce and analyze the ZMP preview control pipeline:
 - Apply inverse kinematics to produce consistent joint motions
 - Apply computed joint positions to the simulated robot in Pybullet
 
+The different steps are represented by the figure below:
+
+<div class="center-mermaid">
+
+```mermaid
+flowchart TD
+    zmp_ref["ZMP reference generation"]
+    zmp_preview["ZMP Preview Controller"] 
+    foot["Foot trajectory generation"]
+    foot["Foot trajectory generation"]
+    inverse_kin["Inverse kinematics"]
+    sim["Simulator"]
+    zmp_ref --> zmp_preview --> foot --> inverse_kin --> sim
+```
+
+</div>
+
 The implementation prioritizes **simplicity** and **experimental reproducibility**, making it suitable for education
 purpose. It relies on [Pinocchio](https://github.com/stack-of-tasks/pinocchio) to handle the kinematics of the robot and
 [PyBullet](https://pybullet.org/wordpress/) for physics simulation.

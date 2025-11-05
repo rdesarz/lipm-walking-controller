@@ -1,0 +1,10 @@
+/* Center Mermaid diagrams in Material for MkDocs */
+.md-typeset .mermaid > svg {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.center-mermaid .mermaid > svg {
+  display: block;
+  margin: 0 auto;
+}
