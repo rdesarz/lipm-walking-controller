@@ -42,11 +42,11 @@ def main():
     # ZMP reference parameters
     t_ss = 0.8  # Single support phase time window
     t_ds = 0.4  # Double support phase time window
-    t_init = 2.0  # Initialization phase (transition from still position to first step)
+    t_init = 4.0  # Initialization phase (transition from still position to first step)
     t_end = 1.0
-    n_steps = 15  # Number of steps executed by the robot
+    n_steps = 11  # Number of steps executed by the robot
     l_stride = 0.1  # Length of the stride
-    max_height_foot = 0.01  # Maximal height of the swing foot
+    max_height_foot = 0.015  # Maximal height of the swing foot
 
     # Preview controller parameters
     t_preview = 1.6  # Time horizon used for the preview controller

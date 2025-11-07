@@ -42,7 +42,7 @@ def sinusoidal_swing_foot_path(
     path = np.zeros((len(s), 3))
     theta = s * math.pi
     path[:, 2] += np.sin(theta) * max_height_foot
-    path[:, 1] = p_start[2]
+    path[:, 1] = p_start[1]
     path[:, 0] = (1 - s) * p_start[0] + s * p_end[0]
 
     return path
@@ -59,7 +59,7 @@ def compute_feet_path_and_poses(
     l_stride,
     dt,
     max_height_foot,
-    traj_generator=sinusoidal_swing_foot_path,
+    traj_generator=quintic_bezier_curve_swing_foot_path,
 ):
     """
     Generate swing trajectories and step poses for alternating feet.
