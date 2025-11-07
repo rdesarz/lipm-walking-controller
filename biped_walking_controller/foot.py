@@ -15,6 +15,39 @@ from shapely import Polygon, Point, affinity, union
 from shapely.ops import nearest_points
 
 
+def bezier_quintic(P, s):
+    # P: (6,3) control points, s: array in [0,1]
+    B = np.array([math.comb(5, i) * ((1 - s) ** (5 - i)) * (s**i) for i in range(6)])  # (6,N)
+    return B.T @ P  # (N,3)
+
+
+def quintic_bezier_curve_swing_foot_path(
+    p_start: np.ndarray, p_end: np.ndarray, s: np.ndarray, max_height_foot: float
+):
+    P = np.zeros((6, 3))
+    P[0] = P[1] = P[2] = p_start
+    P[3] = P[4] = P[5] = p_end
+
+    P[1][2] += 0.01
+    P[2][2] += 0.02
+    P[3][2] += 0.02
+    P[4][2] += 0.01
+
+    return bezier_quintic(P, s)
+
+
+def sinusoidal_swing_foot_path(
+    p_start: np.ndarray, p_end: np.ndarray, s: np.ndarray, max_height_foot: float
+):
+    path = np.zeros((len(s), 3))
+    theta = s * math.pi
+    path[:, 2] += np.sin(theta) * max_height_foot
+    path[:, 1] = p_start[2]
+    path[:, 0] = (1 - s) * p_start[0] + s * p_end[0]
+
+    return path
+
+
 def compute_feet_path_and_poses(
     rf_initial_pose,
     lf_initial_pose,
@@ -26,6 +59,7 @@ def compute_feet_path_and_poses(
     l_stride,
     dt,
     max_height_foot,
+    traj_generator=sinusoidal_swing_foot_path,
 ):
     """
     Generate swing trajectories and step poses for alternating feet.
@@ -102,11 +136,11 @@ def compute_feet_path_and_poses(
     rf_path[mask, :] = rf_initial_pose
     lf_path[mask, :] = lf_initial_pose
 
-    steps_pose = np.zeros((n_steps + 2, 2))
-    steps_pose[0] = rf_initial_pose[0:2]
+    steps_pose = np.zeros((n_steps + 2, 3))
+    steps_pose[0] = rf_initial_pose
     for i in range(1, n_steps + 1):
         sign = -1.0 if i % 2 == 0 else 1.0
-        steps_pose[i] = np.array([i * l_stride, sign * math.fabs(lf_initial_pose[1])])
+        steps_pose[i] = np.array([i * l_stride, sign * math.fabs(lf_initial_pose[1]), 0.0])
 
     # Add a last step to have both feet at the same level
     steps_pose[-1] = steps_pose[-2]
@@ -119,18 +153,19 @@ def compute_feet_path_and_poses(
         mask = (t >= t_begin) & (t < t_end)
         sub_time = t[mask] - (t_init + k * (t_ss + t_ds))
 
-        # Compute motion on z-axis
-        theta = sub_time * math.pi / t_ss
-        lf_path[mask, 2] += np.sin(theta) * max_height_foot
         phases[mask] = -1.0
 
-        # Compute motion on x-axis
+        # Compute motion on every axis
         if k == 0:
             alpha = sub_time / t_ss
-            lf_path[mask, 0] = (1 - alpha) * lf_initial_pose[0] + alpha * steps_pose[k + 1][0]
+            lf_path[mask] = traj_generator(
+                lf_initial_pose, steps_pose[k + 1], alpha, max_height_foot
+            )
         else:
             alpha = sub_time / t_ss
-            lf_path[mask, 0] = (1 - alpha) * steps_pose[k - 1][0] + alpha * steps_pose[k + 1][0]
+            lf_path[mask] = traj_generator(
+                steps_pose[k - 1], steps_pose[k + 1], alpha, max_height_foot
+            )
 
         # # Add constant part till the next step
         t_begin = t_init + k * (t_ss + t_ds) + t_ss
@@ -145,18 +180,19 @@ def compute_feet_path_and_poses(
         mask = (t > t_begin) & (t < t_end)
         sub_time = t[mask] - (t_init + k * (t_ss + t_ds))
 
-        # Compute motion on z-axis
-        theta = sub_time * math.pi / t_ss
-        rf_path[mask, 2] += np.sin(theta) * max_height_foot
         phases[mask] = 1.0
 
         # Compute motion on x-axis
         if k == 1:
             alpha = sub_time / t_ss
-            rf_path[mask, 0] = (1 - alpha) * rf_initial_pose[0] + alpha * steps_pose[k + 1][0]
+            rf_path[mask] = traj_generator(
+                rf_initial_pose, steps_pose[k + 1], alpha, max_height_foot
+            )
         else:
             alpha = sub_time / t_ss
-            rf_path[mask, 0] = (1 - alpha) * steps_pose[k - 1][0] + alpha * steps_pose[k + 1][0]
+            rf_path[mask] = traj_generator(
+                steps_pose[k - 1], steps_pose[k + 1], alpha, max_height_foot
+            )
 
         # # Add constant part till the next step
         t_begin = t_init + k * (t_ss + t_ds) + t_ss

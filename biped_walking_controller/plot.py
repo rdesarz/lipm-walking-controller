@@ -107,43 +107,43 @@ def plot_feet_and_com(
     zmp_pos = zmp_pos[mask]
 
     # -------- Time plots (x,z,y in meters) --------
-    # fig, axes = plt.subplots(3, sharex=True, layout="constrained", figsize=(12, 8))
-    #
-    # series = [
-    #     ("LF pin", lf_pin_pos),
-    #     ("LF ref", lf_ref_pos),
-    #     ("LF pb", lf_pb_pos),
-    #     ("RF pin", rf_pin_pos),
-    #     ("RF ref", rf_ref_pos),
-    #     ("RF pb", rf_pb_pos),
-    #     ("CoM pin", com_pin_pos),
-    #     ("CoM pb", com_pb_pos),
-    #     ("CoM ref", com_ref_pos),
-    #     ("ZMP pos", zmp_pos),
-    # ]
-    # coord_labels = ["x [m]", "z [m]", "y [m]"]
-    # coord_idx = [0, 2, 1]  # match your original order
+    fig, axes = plt.subplots(3, sharex=True, layout="constrained", figsize=(12, 8))
+
+    series = [
+        ("LF pin", lf_pin_pos),
+        ("LF ref", lf_ref_pos),
+        ("LF pb", lf_pb_pos),
+        ("RF pin", rf_pin_pos),
+        ("RF ref", rf_ref_pos),
+        ("RF pb", rf_pb_pos),
+        ("CoM pin", com_pin_pos),
+        ("CoM pb", com_pb_pos),
+        ("CoM ref", com_ref_pos),
+        ("ZMP pos", zmp_pos),
+    ]
+    coord_labels = ["x [m]", "z [m]", "y [m]"]
+    coord_idx = [0, 2, 1]  # match your original order
 
     linestyles = {
         "pin": "-",
         "ref": "--",
         "pb": "-",
     }
-    #
-    # for ax, j in zip(axes, coord_idx):
-    #     for name, arr in series:
-    #         # Pick linestyle by source keyword in label
-    #         key = "ref" if "ref" in name.lower() else ("pb" if "pb" in name.lower() else "pin")
-    #         ax.plot(t, arr[:, j], linestyle=linestyles[key], label=name)
-    #     ax.set_ylabel(coord_labels[coord_idx.index(j)])
-    #     ax.grid(True)
-    #
-    # axes[-1].set_xlabel("t [s]")
-    #
-    # # One combined legend outside
-    # handles, labels = axes[0].get_legend_handles_labels()
-    # fig.legend(handles, labels, loc="upper center", ncols=5, frameon=False)
-    # fig.suptitle(f"{title_prefix} — time profiles")
+
+    for ax, j in zip(axes, coord_idx):
+        for name, arr in series:
+            # Pick linestyle by source keyword in label
+            key = "ref" if "ref" in name.lower() else ("pb" if "pb" in name.lower() else "pin")
+            ax.plot(t, arr[:, j], linestyle=linestyles[key], label=name)
+        ax.set_ylabel(coord_labels[coord_idx.index(j)])
+        ax.grid(True)
+
+    axes[-1].set_xlabel("t [s]")
+
+    # One combined legend outside
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncols=5, frameon=False)
+    fig.suptitle(f"{title_prefix} — time profiles")
 
     # -------- Plan view (x vs y) --------
     plt.rcParams.update({"font.size": 14})
