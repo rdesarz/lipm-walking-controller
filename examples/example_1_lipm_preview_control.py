@@ -21,13 +21,13 @@ if __name__ == "__main__":
     t_preview = 1.6  # Time horizon used for the preview controller
 
     # ZMP reference parameters
-    t_ss = 0.8  # Single support phase time window
+    t_ss = 0.6  # Single support phase time window
     t_ds = 0.4  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
     t_end = 1.0
     foot_shape = Polygon(((0.11, 0.05), (0.11, -0.05), (-0.11, -0.05), (-0.11, 0.05)))
-    n_steps = 19
-    l_stride = 0.1
+    n_steps = 5
+    l_stride = 0.3
     max_height_foot = 0.05
     com_initial_pose = np.array([0.0, 0.0])
     rf_initial_pose = np.array([0.0, -0.1, 0.0])

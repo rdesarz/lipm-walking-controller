@@ -21,31 +21,52 @@ def bezier_quintic(P, s):
     return B.T @ P  # (N,3)
 
 
-def quintic_bezier_curve_swing_foot_path(
-    p_start: np.ndarray, p_end: np.ndarray, s: np.ndarray, max_height_foot: float
-):
-    P = np.zeros((6, 3))
-    P[0] = P[1] = P[2] = p_start
-    P[3] = P[4] = P[5] = p_end
+class BezierCurveFootPathGenerator:
+    def __init__(self, foot_height: float):
+        P = np.zeros((6, 3))
+        P[0] = P[1] = P[2] = np.array([0.0, 0.0, 0.0])
+        P[3] = P[4] = P[5] = np.array([0.3, 0.0, 0.0])
 
-    P[1][2] += 0.007
-    P[2][2] += 0.01
-    P[3][2] += 0.01
-    P[4][2] += 0.007
+        # Brute force search for the alpha value that will provide the right height
+        element = np.linspace(0, 2.0 * foot_height, num=3000)
 
-    return bezier_quintic(P, s)
+        for alpha in element:
+            P[1][2] = alpha / 2.0
+            P[2][2] = alpha
+            P[3][2] = alpha
+            P[4][2] = alpha / 2.0
+
+            apex = bezier_quintic(P, np.array([0.5]))
+
+            if math.fabs(apex[:, 2] - foot_height) < 1e-3:
+                self.alpha = alpha
+                break
+
+    def __call__(self, p_start: np.ndarray, p_end: np.ndarray, s: np.ndarray):
+        P = np.zeros((6, 3))
+        P[0] = P[1] = P[2] = p_start
+        P[3] = P[4] = P[5] = p_end
+
+        P[1][2] = self.alpha / 2.0
+        P[2][2] = self.alpha
+        P[3][2] = self.alpha
+        P[4][2] = self.alpha / 2.0
+
+        return bezier_quintic(P, s)
 
 
-def sinusoidal_swing_foot_path(
-    p_start: np.ndarray, p_end: np.ndarray, s: np.ndarray, max_height_foot: float
-):
-    path = np.zeros((len(s), 3))
-    theta = s * math.pi
-    path[:, 2] += np.sin(theta) * max_height_foot
-    path[:, 1] = p_start[1]
-    path[:, 0] = (1 - s) * p_start[0] + s * p_end[0]
+class SinusoidFootPathGenerator:
+    def __init__(self, foot_height: float):
+        self.foot_height = foot_height
 
-    return path
+    def __call__(self, p_start: np.ndarray, p_end: np.ndarray, s: np.ndarray):
+        path = np.zeros((len(s), 3))
+        theta = s * math.pi
+        path[:, 2] += np.sin(theta) * self.foot_height
+        path[:, 1] = p_start[1]
+        path[:, 0] = (1 - s) * p_start[0] + s * p_end[0]
+
+        return path
 
 
 def compute_feet_path_and_poses(
@@ -58,8 +79,7 @@ def compute_feet_path_and_poses(
     t_final,
     l_stride,
     dt,
-    max_height_foot,
-    traj_generator=quintic_bezier_curve_swing_foot_path,
+    traj_generator=BezierCurveFootPathGenerator(foot_height=0.1),
 ):
     """
     Generate swing trajectories and step poses for alternating feet.
@@ -158,14 +178,10 @@ def compute_feet_path_and_poses(
         # Compute motion on every axis
         if k == 0:
             alpha = sub_time / t_ss
-            lf_path[mask] = traj_generator(
-                lf_initial_pose, steps_pose[k + 1], alpha, max_height_foot
-            )
+            lf_path[mask] = traj_generator(lf_initial_pose, steps_pose[k + 1], alpha)
         else:
             alpha = sub_time / t_ss
-            lf_path[mask] = traj_generator(
-                steps_pose[k - 1], steps_pose[k + 1], alpha, max_height_foot
-            )
+            lf_path[mask] = traj_generator(steps_pose[k - 1], steps_pose[k + 1], alpha)
 
         # # Add constant part till the next step
         t_begin = t_init + k * (t_ss + t_ds) + t_ss
@@ -185,14 +201,10 @@ def compute_feet_path_and_poses(
         # Compute motion on x-axis
         if k == 1:
             alpha = sub_time / t_ss
-            rf_path[mask] = traj_generator(
-                rf_initial_pose, steps_pose[k + 1], alpha, max_height_foot
-            )
+            rf_path[mask] = traj_generator(rf_initial_pose, steps_pose[k + 1], alpha)
         else:
             alpha = sub_time / t_ss
-            rf_path[mask] = traj_generator(
-                steps_pose[k - 1], steps_pose[k + 1], alpha, max_height_foot
-            )
+            rf_path[mask] = traj_generator(steps_pose[k - 1], steps_pose[k + 1], alpha)
 
         # # Add constant part till the next step
         t_begin = t_init + k * (t_ss + t_ds) + t_ss

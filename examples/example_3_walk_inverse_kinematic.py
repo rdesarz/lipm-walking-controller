@@ -11,7 +11,8 @@ from biped_walking_controller.preview_control import (
     PreviewControllerParams,
 )
 
-from biped_walking_controller.foot import compute_feet_path_and_poses
+from biped_walking_controller.foot import compute_feet_path_and_poses, BezierCurveFootPathGenerator
+
 from biped_walking_controller.inverse_kinematic import solve_inverse_kinematics, InvKinSolverParams
 from biped_walking_controller.model import Talos
 from biped_walking_controller.visualizer import Visualizer
@@ -77,7 +78,7 @@ if __name__ == "__main__":
         t_end,
         l_stride,
         dt,
-        max_height_foot,
+        traj_generator=BezierCurveFootPathGenerator(max_height_foot),
     )
 
     zmp_ref = compute_zmp_ref(t, com_initial_pose[0:2], steps_pose, t_ss, t_ds, t_init, t_end)

@@ -6,7 +6,7 @@ import numpy as np
 import pybullet as pb
 import pinocchio as pin
 
-from biped_walking_controller.foot import compute_feet_path_and_poses
+from biped_walking_controller.foot import compute_feet_path_and_poses, BezierCurveFootPathGenerator
 
 from biped_walking_controller.inverse_kinematic import InvKinSolverParams, solve_inverse_kinematics
 from biped_walking_controller.plot import plot_feet_and_com
@@ -174,7 +174,7 @@ def main():
         t_end,
         l_stride,
         dt,
-        max_height_foot,
+        traj_generator=BezierCurveFootPathGenerator(max_height_foot),
     )
 
     zmp_ref = compute_zmp_ref(

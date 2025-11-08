@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from biped_walking_controller.foot import compute_feet_path_and_poses
+from biped_walking_controller.foot import compute_feet_path_and_poses, BezierCurveFootPathGenerator
 
 if __name__ == "__main__":
     # Parameters
@@ -29,7 +29,7 @@ if __name__ == "__main__":
         t_end,
         l_stride,
         dt,
-        max_height_foot,
+        traj_generator=BezierCurveFootPathGenerator(foot_height=max_height_foot),
     )
 
     # Figure
