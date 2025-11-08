@@ -28,10 +28,10 @@ def quintic_bezier_curve_swing_foot_path(
     P[0] = P[1] = P[2] = p_start
     P[3] = P[4] = P[5] = p_end
 
-    P[1][2] += 0.01
-    P[2][2] += 0.02
-    P[3][2] += 0.02
-    P[4][2] += 0.01
+    P[1][2] += 0.007
+    P[2][2] += 0.01
+    P[3][2] += 0.01
+    P[4][2] += 0.007
 
     return bezier_quintic(P, s)
 

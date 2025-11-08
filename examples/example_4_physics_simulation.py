@@ -17,6 +17,7 @@ from biped_walking_controller.preview_control import (
     update_control,
     compute_zmp_ref,
     cubic_spline_interpolation,
+    linear_interpolation,
 )
 
 from biped_walking_controller.model import Talos, q_from_base_and_joints
@@ -44,7 +45,7 @@ def main():
     t_ds = 0.4  # Double support phase time window
     t_init = 4.0  # Initialization phase (transition from still position to first step)
     t_end = 1.0
-    n_steps = 11  # Number of steps executed by the robot
+    n_steps = 25  # Number of steps executed by the robot
     l_stride = 0.1  # Length of the stride
     max_height_foot = 0.015  # Maximal height of the swing foot
 
@@ -283,6 +284,9 @@ def main():
             rf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_right_6_link")
 
     if args.plot_results:
+        zmp_ref_plot = np.zeros((zmp_ref.shape[0], 3))
+        zmp_ref_plot[:, :2] = zmp_ref
+
         plot_feet_and_com(
             title_prefix="Walking controller",
             t=t,
@@ -295,7 +299,8 @@ def main():
             com_ref_pos=com_ref_pos,
             com_pb_pos=com_pb_pos,
             com_pin_pos=com_pin_pos,
-            zmp_pos=zmp_pos,
+            zmp_pb=zmp_pos,
+            zmp_ref=zmp_ref_plot,
         )
 
     # Infinite loop to display the ending position

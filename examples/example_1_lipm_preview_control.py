@@ -15,19 +15,19 @@ from biped_walking_controller.foot import get_active_polygon, compute_feet_path_
 
 if __name__ == "__main__":
     # Parameters
-    dt = 0.005  # Delta of time of the model simulation
+    dt = 1 / 240.0  # 0.005  # Delta of time of the model simulation
 
     # Preview controller parameters
     t_preview = 1.6  # Time horizon used for the preview controller
 
     # ZMP reference parameters
-    t_ss = 0.6  # Single support phase time window
+    t_ss = 0.8  # Single support phase time window
     t_ds = 0.4  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
     t_end = 1.0
     foot_shape = Polygon(((0.11, 0.05), (0.11, -0.05), (-0.11, -0.05), (-0.11, 0.05)))
-    n_steps = 5
-    l_stride = 0.3
+    n_steps = 19
+    l_stride = 0.1
     max_height_foot = 0.05
     com_initial_pose = np.array([0.0, 0.0])
     rf_initial_pose = np.array([0.0, -0.1, 0.0])
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     )
 
     # Build ZMP reference to track
-    zmp_ref = compute_zmp_ref(t, com_initial_pose, steps_pose, t_ss, t_ds, t_init, t_end)
+    zmp_ref = compute_zmp_ref(t, com_initial_pose, steps_pose[:, :2], t_ss, t_ds, t_init, t_end)
 
     # Initialize controller
     ctrler_params = PreviewControllerParams(

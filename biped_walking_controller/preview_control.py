@@ -73,7 +73,7 @@ def compute_zmp_ref(
         zmp_ref[(t >= t_start) & (t < t_start + ss_t)] = current_step
 
         # Add double support phase
-        mask = (t >= t_start + ss_t) & (t < t_start + ss_t + ds_t)
+        mask = (t >= t_start + ss_t) & (t < t_start + ss_t + ds_t + t[1])
         alpha = (t[mask] - (t_start + ss_t)) / ds_t
         zmp_ref[mask, :] = interp_fn(alpha, current_step, next_step)
 
