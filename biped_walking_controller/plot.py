@@ -3,6 +3,8 @@ from biped_walking_controller.foot import (
     compute_single_support_polygon,
 )
 
+from biped_walking_controller.preview_control import WalkingState
+
 
 def plot_steps(axes, steps_pose, step_shape):
     # Plot double support polygon
@@ -186,18 +188,30 @@ def plot_feet_and_com(
     ax2.set_title(f"{title_prefix} — plan view (x–y)")
 
 
-def plot_contact_forces(t, force_rf, force_lf, title="Contact force Fx"):
+def plot_contact_forces(
+    t: float,
+    force_rf: float,
+    force_lf: float,
+    states: WalkingState,
+    title: str = "Contact force Fx",
+):
     t = np.asarray(t).ravel()
     force_rf = np.asarray(force_rf).ravel()
     force_lf = np.asarray(force_lf).ravel()
     assert t.size == force_rf.size == force_lf.size
 
-    plt.figure(figsize=(12, 8), layout="constrained")
-    plt.plot(t, force_rf, label="right foot")
-    plt.plot(t, force_lf, label="left foot")
-    plt.xlabel("t [s]")
-    plt.ylabel("Normal force [N]")
-    plt.title(title)
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
+    fig, ax = plt.subplots(2, figsize=(12, 8), layout="constrained")
+    ax[0].plot(t, force_rf, label="right foot")
+    ax[0].plot(t, force_lf, label="left foot")
+    ax[0].set_xlabel("t [s]")
+    ax[0].set_ylabel("Normal force [N]")
+    ax[0].set_title(title)
+    ax[0].grid(True)
+    ax[0].legend()
+
+    ax[1].plot(t, states, label="state")
+    ax[1].set_xlabel("t [s]")
+    ax[1].set_ylabel("State [-]")
+    ax[1].set_title(title)
+    ax[1].grid(True)
+    ax[1].legend()

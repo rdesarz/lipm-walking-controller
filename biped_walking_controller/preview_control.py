@@ -1,4 +1,8 @@
+import abc
+import typing
+from abc import abstractmethod
 from dataclasses import dataclass
+from enum import Enum
 
 import numpy as np
 from scipy.linalg import solve_discrete_are
@@ -251,3 +255,87 @@ def update_control(ctrl_mat: PreviewControllerMatrices, current_zmp, zmp_ref, x,
     y_next[1:] = ctrl_mat.A @ y[1:] + ctrl_mat.B.ravel() * u[1]
 
     return u, x_next, y_next
+
+
+class WalkingState(Enum):
+    INIT = 0
+    DS = 1
+    SS_LEFT = 2
+    SS_RIGHT = 3
+    END = 4
+
+
+@dataclass
+class WalkingStateMachineParams:
+    t_init: float = 2.0  # [s]
+    t_end: float = 2.0  # [s]
+    t_ss: float = 0.8  # [s]
+    t_ds: float = 0.3  # [s]
+    force_threshold: float = 50  # [N]
+
+
+class WalkingStateMachine:
+    def __init__(self, params: WalkingStateMachineParams, initial_state=WalkingState.INIT):
+        self.params = params
+        self.state = initial_state
+        self.next_ss_state = WalkingState.SS_RIGHT
+        self.t_start = 0.0
+        self.steps = None
+        self.step_idx = None
+
+    def update_steps(self, steps_pose):
+        self.steps = steps_pose
+        self.step_idx = 0
+
+    def update(
+        self,
+        t: float,
+        rf_contact_force: float,
+        lf_contact_force: float,
+    ):
+        if self.steps is None:
+            return
+
+        delta_t = t - self.t_start
+
+        if self.state == WalkingState.INIT:
+            self._try_transition_to_single_support(t, self.params.t_init)
+
+        elif self.state == WalkingState.DS:
+            self._try_transition_to_single_support(t, self.params.t_ds)
+
+        elif self.state == WalkingState.SS_RIGHT:
+            self._try_transition_to_ds_or_end(t, lf_contact_force)
+
+        elif self.state == WalkingState.SS_LEFT:
+            self._try_transition_to_ds_or_end(t, rf_contact_force)
+
+        elif self.state == WalkingState.END:
+            if delta_t > self.params.t_end:
+                self.steps = None
+
+    def get_current_state(self) -> WalkingState:
+        return self.state
+
+    def _switch_single_support_leg(self, t: float):
+        self.t_start = t
+        self.state = self.next_ss_state
+        self.next_ss_state = (
+            WalkingState.SS_LEFT if self.state == WalkingState.SS_RIGHT else WalkingState.SS_RIGHT
+        )
+
+    def _try_transition_to_single_support(self, t: float, duration: float):
+        if t - self.t_start > duration:
+            self._switch_single_support_leg(t)
+
+    def _is_last_step(self) -> bool:
+        return self.step_idx == len(self.steps) - 2
+
+    def _try_transition_to_ds_or_end(self, t: float, contact_force: float):
+        if (
+            t - self.t_start > 0.5 * self.params.t_ss
+            and contact_force > self.params.force_threshold
+        ):
+            self.t_start = t
+            self.state = WalkingState.END if self._is_last_step() else WalkingState.DS
+            self.step_idx += 1
