@@ -270,8 +270,6 @@ def main():
         # Uncomment to follow the center of mass of the robot
         simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
 
-        rf_forces[k], lf_forces[k] = simulator.get_contact_forces()
-
         simulator.step()
 
         if args.plot_results:
@@ -290,6 +288,8 @@ def main():
             rf_ref_pos[k] = rf_path[k]
             rf_pin_pos[k] = talos.data.oMf[talos.right_foot_id].translation
             rf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_right_6_link")
+
+            rf_forces[k], lf_forces[k] = simulator.get_contact_forces()
 
     if args.plot_results:
 

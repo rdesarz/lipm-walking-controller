@@ -503,6 +503,40 @@ class Simulator:
         )
 
     def get_contact_forces(self) -> typing.Tuple[float, float]:
+        """
+        Return the net x-axis contact forces for the right and left foot.
+
+        The method queries PyBullet for contacts between the robot and the ground
+        on each foot link, then uses the private helper `_compute_force(...)`
+        to aggregate the force component along the world x-axis.
+
+        Requirements
+        ------------
+        - `self.robot_id` : int
+            PyBullet body id of the robot.
+        - `self.plane_id` : int
+            PyBullet body id of the ground/plane.
+        - `self.rf_link_id` : int
+            Link index of the right foot.
+        - `self.lf_link_id` : int
+            Link index of the left foot.
+        - `_compute_force(contacts) -> tuple[float, Any]`
+            Helper that returns the x-axis force [N] as its first element.
+            It should return 0.0 if `contacts` is empty.
+
+        Returns
+        -------
+        (float, float)
+            `(Fx_right, Fx_left)` in Newtons, world frame.
+
+        Notes
+        -----
+        - Only contacts with `bodyA=self.robot_id`, `bodyB=self.plane_id`,
+          and `linkIndexA` equal to the corresponding foot link are considered.
+        - If a foot has no active contacts, its returned force is expected to be 0.0.
+        - This method assumes `_compute_force` already applies the correct
+          Newton third-law sign convention to yield the force exerted on the robot.
+        """
         rf_force, _ = _compute_force(
             pb.getContactPoints(
                 bodyA=self.robot_id, bodyB=self.plane_id, linkIndexA=self.rf_link_id
