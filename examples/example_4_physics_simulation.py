@@ -6,7 +6,10 @@ import numpy as np
 import pybullet as pb
 import pinocchio as pin
 
-from biped_walking_controller.foot import compute_feet_path_and_poses
+from biped_walking_controller.foot import (
+    compute_feet_path_and_poses,
+    BezierCurveFootPathGenerator,
+)
 
 from biped_walking_controller.inverse_kinematic import InvKinSolverParams, solve_inverse_kinematics
 from biped_walking_controller.plot import plot_feet_and_com
@@ -41,9 +44,9 @@ def main():
 
     # ZMP reference parameters
     t_ss = 0.8  # Single support phase time window
-    t_ds = 0.8  # Double support phase time window
+    t_ds = 0.3  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
-    t_end = 1.0
+    t_end = 0.4
     n_steps = 15  # Number of steps executed by the robot
     l_stride = 0.1  # Length of the stride
     max_height_foot = 0.01  # Maximal height of the swing foot
@@ -173,13 +176,13 @@ def main():
         t_end,
         l_stride,
         dt,
-        max_height_foot,
+        traj_generator=BezierCurveFootPathGenerator(max_height_foot),
     )
 
     zmp_ref = compute_zmp_ref(
         t=t,
         com_initial_pose=com_initial_target[0:2],
-        steps=steps_pose,
+        steps=steps_pose[:, 0:2],
         ss_t=t_ss,
         ds_t=t_ds,
         t_init=t_init,
@@ -283,6 +286,9 @@ def main():
             rf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_right_6_link")
 
     if args.plot_results:
+        zmp_ref_plot = np.zeros((zmp_ref.shape[0], 3))
+        zmp_ref_plot[:, :2] = zmp_ref
+
         plot_feet_and_com(
             title_prefix="Walking controller",
             t=t,
@@ -295,7 +301,8 @@ def main():
             com_ref_pos=com_ref_pos,
             com_pb_pos=com_pb_pos,
             com_pin_pos=com_pin_pos,
-            zmp_pos=np.zeros(com_pin_pos.shape),
+            zmp_pb=zmp_pos,
+            zmp_ref=zmp_ref_plot,
         )
 
     # Infinite loop to display the ending position

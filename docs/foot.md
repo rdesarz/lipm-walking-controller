@@ -6,10 +6,12 @@ Walking is organized into fixed-duration phases: **Single Support (SS)** and **D
 **swing foot** and the other is the **stance foot**. In Double Support both feet are in contact and no swing foot exists. The timing of each 
 phase is related to the trajectory of the ZMP. During Single Support phase, the ZMP position is maintained over the stance
 foot. During Double Support phase, the ZMP position moves from a foot to another.
-Currently, the swing foot horizontal position follows a sinusoidal time law along the world x-axis from $x_0$ to $x_1$ 
+Currently, there are two approaches can be used to generate the swing foot trajectory:
+* The first one is to follow a sinusoidal time law along the world x-axis from $x_0$ to $x_1$ 
 over duration $T_{SS}$. 
-The lateral position $y$ stays constant. The vertical motion is a simple bump with peak clearance $h$ above the ground
-reference, returning to the ground at touchdown. Foot orientation is kept constant with yaw=0; 
+* The second, default option uses a minimum-jerk Bézier curve whose velocity and acceleration are aligned with the ground normal. This ensures smooth foot motion. The curve parameters are set so that its peak reaches the desired maximum height. 
+
+The foot orientation is kept constant with yaw=0; 
 the sole remains parallel to the floor. All phase durations are configurable.
 
 The figure below shows the generated trajectory for both foot with a height of 20cm:

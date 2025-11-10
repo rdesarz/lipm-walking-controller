@@ -62,7 +62,7 @@ def compute_zmp_ref(
     # Step on the first foot
     mask = t < t_init
     alpha = t[mask] / t_init
-    zmp_ref[mask, :] = (1 - alpha)[:, None] * com_initial_pose + alpha[:, None] * steps[0]
+    zmp_ref[mask, :] = interp_fn(alpha, com_initial_pose, steps[0])
 
     # Alternate between foot
     for idx, (current_step, next_step) in enumerate(zip(steps[:-2], steps[1:-1])):
@@ -73,7 +73,7 @@ def compute_zmp_ref(
         zmp_ref[(t >= t_start) & (t < t_start + ss_t)] = current_step
 
         # Add double support phase
-        mask = (t >= t_start + ss_t) & (t < t_start + ss_t + ds_t)
+        mask = (t >= t_start + ss_t) & (t < t_start + ss_t + ds_t + t[1])
         alpha = (t[mask] - (t_start + ss_t)) / ds_t
         zmp_ref[mask, :] = interp_fn(alpha, current_step, next_step)
 
@@ -83,9 +83,7 @@ def compute_zmp_ref(
 
     mask = (t >= t_start + ss_t) & (t < t_start + ss_t + t_final)
     alpha = (t[mask] - (t_start + ss_t)) / t_final
-    zmp_ref[mask, :] = (1 - alpha)[:, None] * steps[-2] + alpha[:, None] * (
-        steps[-1] + steps[-2]
-    ) / 2.0
+    zmp_ref[mask, :] = interp_fn(alpha, steps[-2], (steps[-1] + steps[-2]) / 2.0)
 
     return zmp_ref
 

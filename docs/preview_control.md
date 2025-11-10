@@ -10,7 +10,7 @@ recommend [this blog post](https://scaron.info/robotics/zero-tilting-moment-poin
 ## Linear Inverted Pendulum Model
 
 The first step of the controller is to define a reference ZMP trajectory, alternating from one foot to the other at each
-step.
+step. This reference is generated using a cubic spline that interpolates the position of each foot. 
 The objective is to establish a relationship between the position of this reference ZMP and the robot’s Center of Mass (
 CoM).
 This relationship can be derived from a simplified model of the robot’s dynamics known as the **Linear Inverted Pendulum

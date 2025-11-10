@@ -9,9 +9,11 @@ from biped_walking_controller.preview_control import (
     compute_zmp_ref,
     update_control,
     PreviewControllerParams,
+    cubic_spline_interpolation,
 )
 
-from biped_walking_controller.foot import compute_feet_path_and_poses
+from biped_walking_controller.foot import compute_feet_path_and_poses, BezierCurveFootPathGenerator
+
 from biped_walking_controller.inverse_kinematic import solve_inverse_kinematics, InvKinSolverParams
 from biped_walking_controller.model import Talos
 from biped_walking_controller.visualizer import Visualizer
@@ -77,10 +79,19 @@ if __name__ == "__main__":
         t_end,
         l_stride,
         dt,
-        max_height_foot,
+        traj_generator=BezierCurveFootPathGenerator(max_height_foot),
     )
 
-    zmp_ref = compute_zmp_ref(t, com_initial_pose[0:2], steps_pose, t_ss, t_ds, t_init, t_end)
+    zmp_ref = compute_zmp_ref(
+        t=t,
+        com_initial_pose=com_initial_pose[0:2],
+        steps=steps_pose[:, 0:2],
+        ss_t=t_ss,
+        ds_t=t_ds,
+        t_init=t_init,
+        t_final=t_end,
+        interp_fn=cubic_spline_interpolation,
+    )
 
     zmp_padded = np.vstack(
         [zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)]

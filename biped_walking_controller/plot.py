@@ -49,7 +49,8 @@ def plot_feet_and_com(
     com_ref_pos,
     com_pb_pos,
     com_pin_pos,
-    zmp_pos,
+    zmp_pb,
+    zmp_ref,
     title_prefix="Feet and CoM",
 ):
     # Trim to common length
@@ -64,7 +65,8 @@ def plot_feet_and_com(
         com_ref_pos,
         com_pb_pos,
         com_pin_pos,
-        zmp_pos,
+        zmp_pb,
+        zmp_ref,
     ) = _trim_to_min_len(
         [
             t,
@@ -77,7 +79,8 @@ def plot_feet_and_com(
             com_ref_pos,
             com_pb_pos,
             com_pin_pos,
-            zmp_pos,
+            zmp_pb,
+            zmp_ref,
         ]
     )
 
@@ -92,7 +95,8 @@ def plot_feet_and_com(
         com_ref_pos,
         com_pb_pos,
         com_pin_pos,
-        zmp_pos,
+        zmp_pb,
+        zmp_ref,
     )
     t = t[mask]
     lf_pin_pos = lf_pin_pos[mask]
@@ -104,46 +108,48 @@ def plot_feet_and_com(
     com_ref_pos = com_ref_pos[mask]
     com_pb_pos = com_pb_pos[mask]
     com_pin_pos = com_pin_pos[mask]
-    zmp_pos = zmp_pos[mask]
+    zmp_pb = zmp_pb[mask]
+    zmp_ref = zmp_ref[mask]
 
     # -------- Time plots (x,z,y in meters) --------
-    # fig, axes = plt.subplots(3, sharex=True, layout="constrained", figsize=(12, 8))
-    #
-    # series = [
-    #     ("LF pin", lf_pin_pos),
-    #     ("LF ref", lf_ref_pos),
-    #     ("LF pb", lf_pb_pos),
-    #     ("RF pin", rf_pin_pos),
-    #     ("RF ref", rf_ref_pos),
-    #     ("RF pb", rf_pb_pos),
-    #     ("CoM pin", com_pin_pos),
-    #     ("CoM pb", com_pb_pos),
-    #     ("CoM ref", com_ref_pos),
-    #     ("ZMP pos", zmp_pos),
-    # ]
-    # coord_labels = ["x [m]", "z [m]", "y [m]"]
-    # coord_idx = [0, 2, 1]  # match your original order
+    fig, axes = plt.subplots(3, sharex=True, layout="constrained", figsize=(12, 8))
+
+    series = [
+        ("LF pin", lf_pin_pos),
+        ("LF ref", lf_ref_pos),
+        ("LF pb", lf_pb_pos),
+        ("RF pin", rf_pin_pos),
+        ("RF ref", rf_ref_pos),
+        ("RF pb", rf_pb_pos),
+        ("CoM pin", com_pin_pos),
+        ("CoM pb", com_pb_pos),
+        ("CoM ref", com_ref_pos),
+        ("ZMP ref", zmp_ref),
+        ("ZMP pb", zmp_pb),
+    ]
+    coord_labels = ["x [m]", "z [m]", "y [m]"]
+    coord_idx = [0, 2, 1]  # match your original order
 
     linestyles = {
         "pin": "-",
         "ref": "--",
         "pb": "-",
     }
-    #
-    # for ax, j in zip(axes, coord_idx):
-    #     for name, arr in series:
-    #         # Pick linestyle by source keyword in label
-    #         key = "ref" if "ref" in name.lower() else ("pb" if "pb" in name.lower() else "pin")
-    #         ax.plot(t, arr[:, j], linestyle=linestyles[key], label=name)
-    #     ax.set_ylabel(coord_labels[coord_idx.index(j)])
-    #     ax.grid(True)
-    #
-    # axes[-1].set_xlabel("t [s]")
-    #
-    # # One combined legend outside
-    # handles, labels = axes[0].get_legend_handles_labels()
-    # fig.legend(handles, labels, loc="upper center", ncols=5, frameon=False)
-    # fig.suptitle(f"{title_prefix} — time profiles")
+
+    for ax, j in zip(axes, coord_idx):
+        for name, arr in series:
+            # Pick linestyle by source keyword in label
+            key = "ref" if "ref" in name.lower() else ("pb" if "pb" in name.lower() else "pin")
+            ax.plot(t, arr[:, j], linestyle=linestyles[key], label=name)
+        ax.set_ylabel(coord_labels[coord_idx.index(j)])
+        ax.grid(True)
+
+    axes[-1].set_xlabel("t [s]")
+
+    # One combined legend outside
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncols=5, frameon=False)
+    fig.suptitle(f"{title_prefix} — time profiles")
 
     # -------- Plan view (x vs y) --------
     plt.rcParams.update({"font.size": 14})
@@ -166,7 +172,8 @@ def plot_feet_and_com(
         ("CoM position (Pinocchio)", com_pin_pos),
         ("CoM position (reference)", com_ref_pos),
         ("CoM position (PyBullet)", com_pb_pos),
-        ("ZMP position (PyBullet)", zmp_pos),
+        ("ZMP position (PyBullet)", zmp_pb),
+        ("ZMP reference (PyBullet)", zmp_ref),
     ]:
         x, y = traj2d(arr)
         key = "ref" if "ref" in name.lower() else ("pb" if "pb" in name.lower() else "pin")

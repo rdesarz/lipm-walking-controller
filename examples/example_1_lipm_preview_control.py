@@ -7,15 +7,17 @@ from biped_walking_controller.preview_control import (
     compute_preview_control_matrices,
     update_control,
     PreviewControllerParams,
-    linear_interpolation,
-    cubic_spline_interpolation,
 )
 
-from biped_walking_controller.foot import get_active_polygon, compute_feet_path_and_poses
+from biped_walking_controller.foot import (
+    get_active_polygon,
+    compute_feet_path_and_poses,
+    BezierCurveFootPathGenerator,
+)
 
 if __name__ == "__main__":
     # Parameters
-    dt = 0.005  # Delta of time of the model simulation
+    dt = 1 / 240.0  # 0.005  # Delta of time of the model simulation
 
     # Preview controller parameters
     t_preview = 1.6  # Time horizon used for the preview controller
@@ -51,11 +53,11 @@ if __name__ == "__main__":
         t_end,
         l_stride,
         dt,
-        max_height_foot,
+        BezierCurveFootPathGenerator(max_height_foot),
     )
 
     # Build ZMP reference to track
-    zmp_ref = compute_zmp_ref(t, com_initial_pose, steps_pose, t_ss, t_ds, t_init, t_end)
+    zmp_ref = compute_zmp_ref(t, com_initial_pose, steps_pose[:, :2], t_ss, t_ds, t_init, t_end)
 
     # Initialize controller
     ctrler_params = PreviewControllerParams(

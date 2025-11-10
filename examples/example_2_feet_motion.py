@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from biped_walking_controller.foot import compute_feet_path_and_poses
+from biped_walking_controller.foot import compute_feet_path_and_poses, BezierCurveFootPathGenerator
 
 if __name__ == "__main__":
     # Parameters
@@ -29,28 +29,35 @@ if __name__ == "__main__":
         t_end,
         l_stride,
         dt,
-        max_height_foot,
+        traj_generator=BezierCurveFootPathGenerator(foot_height=max_height_foot),
     )
 
     # Figure
-    fig, axes = plt.subplots(2, 1, layout="constrained", figsize=(12, 12))
+    fig, axes = plt.subplots(3, 1, layout="constrained", figsize=(12, 12))
 
-    # Plot left and right feet trajectories on z-axis
-    axes[0].plot(t, lf_path[:, 2], label="Left foot trajectory")
-    axes[0].plot(t, rf_path[:, 2], label="Right foot trajectory")
+    # Plot left and right feet trajectories on each axis
+    axes[0].plot(t, lf_path[:, 0], label="Left foot trajectory")
+    axes[0].plot(t, rf_path[:, 0], label="Right foot trajectory")
     axes[0].grid(True)
     axes[0].legend()
     axes[0].set_xlabel("t [s]")
-    axes[0].set_ylabel("z pos [m]")
-    axes[0].set_title("Feet trajectories on z-axis")
+    axes[0].set_ylabel("x pos [m]")
+    axes[0].set_title("Feet trajectories on x-axis")
 
-    # Plot left and right feet trajectories on x-axis
-    axes[1].plot(t, lf_path[:, 0], label="Left foot trajectory")
-    axes[1].plot(t, rf_path[:, 0], label="Right foot trajectory")
+    axes[1].plot(t, lf_path[:, 1], label="Left foot trajectory")
+    axes[1].plot(t, rf_path[:, 1], label="Right foot trajectory")
     axes[1].grid(True)
     axes[1].legend()
     axes[1].set_xlabel("t [s]")
-    axes[1].set_ylabel("x pos [m]")
-    axes[1].set_title("Feet trajectories on x-axis")
+    axes[1].set_ylabel("y pos [m]")
+    axes[1].set_title("Feet trajectories on y-axis")
+
+    axes[2].plot(t, lf_path[:, 2], label="Left foot trajectory")
+    axes[2].plot(t, rf_path[:, 2], label="Right foot trajectory")
+    axes[2].grid(True)
+    axes[2].legend()
+    axes[2].set_xlabel("t [s]")
+    axes[2].set_ylabel("z pos [m]")
+    axes[2].set_title("Feet trajectories on z-axis")
 
     plt.show()
