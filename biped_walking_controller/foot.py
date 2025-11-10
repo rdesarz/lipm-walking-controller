@@ -15,20 +15,79 @@ from shapely import Polygon, Point, affinity, union
 from shapely.ops import nearest_points
 
 
-def bezier_quintic(P, s):
-    # P: (6,3) control points, s: array in [0,1]
-    B = np.array([math.comb(5, i) * ((1 - s) ** (5 - i)) * (s**i) for i in range(6)])  # (6,N)
-    return B.T @ P  # (N,3)
+import math
+import numpy as np
+from typing import Tuple
+
+
+def bezier_quintic(P: np.ndarray, s: np.ndarray) -> np.ndarray:
+    """
+    Evaluate a quintic (degree-5) Bézier curve at parameter values ``s``.
+
+    A quintic Bézier curve is:
+        B(s) = Σ_{i=0..5} C(5,i) (1-s)^{5-i} s^i P_i
+
+    Parameters
+    ----------
+    P : np.ndarray
+        Control points of shape ``(6, 3)``. Rows are ``P0..P5``.
+        Columns are Cartesian coordinates ``[x, y, z]``.
+    s : np.ndarray
+        1D array of parameter values in ``[0, 1]`` of shape ``(N,)``.
+
+    Returns
+    -------
+    np.ndarray
+        Curve samples of shape ``(N, 3)``.
+
+    Notes
+    -----
+    With ``P0=P1=P2`` and ``P3=P4=P5``, the curve has zero velocity and
+    acceleration at both ends, which is the typical “minimum-jerk” boundary
+    condition used for swing-foot profiles.
+    """
+    # (6, N) Bernstein basis for degree 5
+    B = np.array([math.comb(5, i) * ((1.0 - s) ** (5 - i)) * (s**i) for i in range(6)])
+    return B.T @ P  # (N, 3)
 
 
 class BezierCurveFootPathGenerator:
+    """
+    Swing-foot path generator using a quintic Bézier with zero vel/acc at endpoints.
+
+    This generator fixes the first three control points at the start pose and
+    the last three at the end pose, then sets the vertical components of the
+    interior points to reach a prescribed apex height. The vertical “shape”
+    parameter ``alpha`` is searched once at construction, then reused per call.
+
+    Parameters
+    ----------
+    foot_height : float
+        Desired apex height of the swing foot above the line segment connecting
+        start and end poses.
+
+    Attributes
+    ----------
+    alpha : float
+        Internal vertical shaping parameter calibrated so that the curve height
+        at ``s=0.5`` equals ``foot_height``.
+
+    Notes
+    -----
+    - The constructor performs a simple grid search over ``alpha`` in
+      ``[0, 2*foot_height]`` to match the apex within ``1e-3``.
+    - Endpoints have zero velocity and acceleration due to repeated control
+      points: ``P0=P1=P2`` and ``P3=P4=P5``.
+    """
+
     def __init__(self, foot_height: float):
         P = np.zeros((6, 3))
         P[0] = P[1] = P[2] = np.array([0.0, 0.0, 0.0])
         P[3] = P[4] = P[5] = np.array([0.3, 0.0, 0.0])
 
-        # Brute force search for the alpha value that will provide the right height
-        element = np.linspace(0, 2.0 * foot_height, num=3000)
+        # Brute-force search for alpha that achieves the desired apex height. Could be optimized in the future if necessary.
+        element = np.linspace(0.0, 2.0 * foot_height, num=3000)
+        self.alpha = 0.0  # default in case foot_height == 0
 
         for alpha in element:
             P[1][2] = alpha / 2.0
@@ -36,17 +95,40 @@ class BezierCurveFootPathGenerator:
             P[3][2] = alpha
             P[4][2] = alpha / 2.0
 
-            apex = bezier_quintic(P, np.array([0.5]))
-
-            if math.fabs(apex[:, 2] - foot_height) < 1e-3:
+            apex = bezier_quintic(P, np.array([0.5]))  # (1, 3)
+            if abs(apex[:, 2] - foot_height) < 1e-3:
                 self.alpha = alpha
                 break
 
-    def __call__(self, p_start: np.ndarray, p_end: np.ndarray, s: np.ndarray):
+    def __call__(self, p_start: np.ndarray, p_end: np.ndarray, s: np.ndarray) -> np.ndarray:
+        """
+        Generate a swing-foot trajectory between two poses.
+
+        Parameters
+        ----------
+        p_start : np.ndarray
+            Start foot position ``(3,)`` as ``[x, y, z]``.
+        p_end : np.ndarray
+            End foot position ``(3,)`` as ``[x, y, z]``.
+        s : np.ndarray
+            1D array of parameter values in ``[0, 1]`` of shape ``(N,)``.
+
+        Returns
+        -------
+        np.ndarray
+            Sampled path of shape ``(N, 3)``.
+
+        Examples
+        --------
+        >>> gen = BezierCurveFootPathGenerator(foot_height=0.06)
+        >>> s = np.linspace(0.0, 1.0, 101)
+        >>> p = gen(np.array([0,0,0]), np.array([0.3,0,0]), s)  # (101, 3)
+        """
         P = np.zeros((6, 3))
         P[0] = P[1] = P[2] = p_start
         P[3] = P[4] = P[5] = p_end
 
+        # Set vertical shape using calibrated alpha
         P[1][2] = self.alpha / 2.0
         P[2][2] = self.alpha
         P[3][2] = self.alpha
@@ -56,16 +138,50 @@ class BezierCurveFootPathGenerator:
 
 
 class SinusoidFootPathGenerator:
+    """
+    Swing-foot path generator with sinusoidal vertical profile.
+
+    The horizontal motion is linear from start to end along x, with y held
+    constant at the start value. The vertical component follows:
+        z(s) = foot_height * sin(pi * s)
+
+    Parameters
+    ----------
+    foot_height : float
+        Maximum height at mid-swing.
+
+    Notes
+    -----
+    This profile is C1 at the endpoints (zero velocity) but not C2 like the
+    Bézier construction. Use the Bézier for smoother contact transitions.
+    """
+
     def __init__(self, foot_height: float):
         self.foot_height = foot_height
 
-    def __call__(self, p_start: np.ndarray, p_end: np.ndarray, s: np.ndarray):
+    def __call__(self, p_start: np.ndarray, p_end: np.ndarray, s: np.ndarray) -> np.ndarray:
+        """
+        Generate a sinusoidal swing-foot trajectory.
+
+        Parameters
+        ----------
+        p_start : np.ndarray
+            Start foot position ``(3,)`` as ``[x, y, z]``.
+        p_end : np.ndarray
+            End foot position ``(3,)`` as ``[x, y, z]``.
+        s : np.ndarray
+            1D array of parameter values in ``[0, 1]`` of shape ``(N,)``.
+
+        Returns
+        -------
+        np.ndarray
+            Sampled path of shape ``(N, 3)``.
+        """
         path = np.zeros((len(s), 3))
         theta = s * math.pi
-        path[:, 2] += np.sin(theta) * self.foot_height
+        path[:, 2] = np.sin(theta) * self.foot_height
         path[:, 1] = p_start[1]
-        path[:, 0] = (1 - s) * p_start[0] + s * p_end[0]
-
+        path[:, 0] = (1.0 - s) * p_start[0] + s * p_end[0]
         return path
 
 
