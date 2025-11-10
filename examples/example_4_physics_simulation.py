@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pybullet as pb
 import pinocchio as pin
+from matplotlib import pyplot as plt
 
 from biped_walking_controller.foot import (
     compute_feet_path_and_poses,
@@ -208,6 +209,9 @@ def main():
 
     zmp_pos = np.zeros((len(phases), 3))
 
+    rf_forces = np.zeros((len(phases), 1))
+    lf_forces = np.zeros((len(phases), 1))
+
     # We start the walking phase
     for k, _ in enumerate(phases[:-2]):
         # Get the current configuration of the robot from the simulator
@@ -266,6 +270,8 @@ def main():
         # Uncomment to follow the center of mass of the robot
         simulator.update_camera_to_follow_pos(x_k[1], 0.0, 0.0)
 
+        rf_forces[k], lf_forces[k] = simulator.get_contact_forces()
+
         simulator.step()
 
         if args.plot_results:
@@ -288,6 +294,9 @@ def main():
     if args.plot_results:
         zmp_ref_plot = np.zeros((zmp_ref.shape[0], 3))
         zmp_ref_plot[:, :2] = zmp_ref
+
+        plt.plot(t, rf_forces)
+        plt.plot(t, lf_forces)
 
         plot_feet_and_com(
             title_prefix="Walking controller",
