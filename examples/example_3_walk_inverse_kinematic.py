@@ -18,7 +18,8 @@ from biped_walking_controller.inverse_kinematic import solve_inverse_kinematics,
 from biped_walking_controller.model import Talos
 from biped_walking_controller.visualizer import Visualizer
 
-if __name__ == "__main__":
+
+def main():
     p = argparse.ArgumentParser()
     p.add_argument("--path-talos-data", type=Path, help="Path to talos_data root")
     p.add_argument(
@@ -177,3 +178,7 @@ if __name__ == "__main__":
         elapsed_dt = stop - start
         remaining_dt = dt - elapsed_dt
         sleep(max(0.0, remaining_dt))
+
+
+if __name__ == "__main__":
+    main()
