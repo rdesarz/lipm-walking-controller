@@ -3,7 +3,8 @@ from matplotlib import pyplot as plt
 
 from biped_walking_controller.foot import compute_feet_path_and_poses, BezierCurveFootPathGenerator
 
-if __name__ == "__main__":
+
+def main():
     # Parameters
     dt = 0.005  # Delta of time of the model simulation
 
@@ -61,3 +62,7 @@ if __name__ == "__main__":
     axes[2].set_title("Feet trajectories on z-axis")
 
     plt.show()
+
+
+if __name__ == "__main__":
+    main()
