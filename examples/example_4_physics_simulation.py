@@ -13,7 +13,7 @@ from biped_walking_controller.foot import (
 )
 
 from biped_walking_controller.inverse_kinematic import InvKinSolverParams, solve_inverse_kinematics
-from biped_walking_controller.plot import plot_feet_and_com
+from biped_walking_controller.plot import plot_feet_and_com, plot_contact_forces
 
 from biped_walking_controller.preview_control import (
     PreviewControllerParams,
@@ -292,11 +292,9 @@ def main():
             rf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_right_6_link")
 
     if args.plot_results:
+
         zmp_ref_plot = np.zeros((zmp_ref.shape[0], 3))
         zmp_ref_plot[:, :2] = zmp_ref
-
-        plt.plot(t, rf_forces)
-        plt.plot(t, lf_forces)
 
         plot_feet_and_com(
             title_prefix="Walking controller",
@@ -313,6 +311,10 @@ def main():
             zmp_pb=zmp_pos,
             zmp_ref=zmp_ref_plot,
         )
+
+        plot_contact_forces(t=t, force_rf=rf_forces, force_lf=lf_forces)
+
+        plt.show()
 
     # Infinite loop to display the ending position
     while True:
