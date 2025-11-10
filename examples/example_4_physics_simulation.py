@@ -9,7 +9,6 @@ import pinocchio as pin
 from biped_walking_controller.foot import (
     compute_feet_path_and_poses,
     BezierCurveFootPathGenerator,
-    SinusoidFootPathGenerator,
 )
 
 from biped_walking_controller.inverse_kinematic import InvKinSolverParams, solve_inverse_kinematics
@@ -21,7 +20,6 @@ from biped_walking_controller.preview_control import (
     update_control,
     compute_zmp_ref,
     cubic_spline_interpolation,
-    linear_interpolation,
 )
 
 from biped_walking_controller.model import Talos, q_from_base_and_joints
@@ -46,9 +44,9 @@ def main():
 
     # ZMP reference parameters
     t_ss = 0.8  # Single support phase time window
-    t_ds = 0.4  # Double support phase time window
-    t_init = 4.0  # Initialization phase (transition from still position to first step)
-    t_end = 1.0
+    t_ds = 0.3  # Double support phase time window
+    t_init = 2.0  # Initialization phase (transition from still position to first step)
+    t_end = 0.4
     n_steps = 15  # Number of steps executed by the robot
     l_stride = 0.1  # Length of the stride
     max_height_foot = 0.01  # Maximal height of the swing foot
