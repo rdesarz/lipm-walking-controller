@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pybullet as pb
 import pinocchio as pin
+from matplotlib import pyplot as plt
 
 from biped_walking_controller.foot import (
     compute_feet_path_and_poses,
@@ -12,7 +13,7 @@ from biped_walking_controller.foot import (
 )
 
 from biped_walking_controller.inverse_kinematic import InvKinSolverParams, solve_inverse_kinematics
-from biped_walking_controller.plot import plot_feet_and_com
+from biped_walking_controller.plot import plot_feet_and_com, plot_contact_forces
 
 from biped_walking_controller.preview_control import (
     PreviewControllerParams,
@@ -208,6 +209,9 @@ def main():
 
     zmp_pos = np.zeros((len(phases), 3))
 
+    rf_forces = np.zeros((len(phases), 1))
+    lf_forces = np.zeros((len(phases), 1))
+
     # We start the walking phase
     for k, _ in enumerate(phases[:-2]):
         # Get the current configuration of the robot from the simulator
@@ -285,7 +289,10 @@ def main():
             rf_pin_pos[k] = talos.data.oMf[talos.right_foot_id].translation
             rf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_right_6_link")
 
+            rf_forces[k], lf_forces[k] = simulator.get_contact_forces()
+
     if args.plot_results:
+
         zmp_ref_plot = np.zeros((zmp_ref.shape[0], 3))
         zmp_ref_plot[:, :2] = zmp_ref
 
@@ -304,6 +311,10 @@ def main():
             zmp_pb=zmp_pos,
             zmp_ref=zmp_ref_plot,
         )
+
+        plot_contact_forces(t=t, force_rf=rf_forces, force_lf=lf_forces)
+
+        plt.show()
 
     # Infinite loop to display the ending position
     while True:

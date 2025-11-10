@@ -319,6 +319,27 @@ def _link_index(body_id, link_name):
     return None
 
 
+def _compute_force(
+    contact_pnts: typing.List,
+) -> typing.Tuple[float, typing.List[float]]:
+    mean_x = 0.0
+    mean_y = 0.0
+    mean_z = 0.0
+    total_force = 0.0
+    for cp in contact_pnts:
+        # tuple fields (relevant):
+        # cp[4]=posOnA (world xyz), cp[5]=posOnB, cp[6]=normalOnB (world xyz),
+        # cp[7]=distance, cp[8]=normalForce
+        posB = cp[6]
+        fN = cp[9]  # Newtons
+        mean_x += posB[0]
+        mean_y += posB[1]
+        mean_z += posB[2]
+        total_force += fN
+
+    return total_force, [mean_x, mean_y, mean_z]
+
+
 class Simulator:
     """
     Thin PyBullet wrapper for loading a robot URDF and driving it from
@@ -380,6 +401,15 @@ class Simulator:
             useFixedBase=False,
             flags=pb.URDF_MERGE_FIXED_LINKS,
         )
+
+        # Find the joint that matches the right and left foot. It will be used to compute contact forces
+        for j in range(pb.getNumJoints(self.robot_id)):
+            info = pb.getJointInfo(self.robot_id, j)
+            link_name = info[12].decode("ascii")
+            if link_name == model.get_lf_link_name():
+                self.rf_link_id = info[0]
+            elif link_name == model.get_rf_link_name():
+                self.lf_link_id = info[0]
 
         # Build mapping between joints for both velocities and position
         self.pb_to_pin_joint_vel = _build_pb_to_pin_joint_vel_vmap(self.robot_id, model.model)
@@ -472,67 +502,54 @@ class Simulator:
             cameraTargetPosition=[x, y, z],
         )
 
-    def draw_contact_forces(self, color=(0, 1, 0), scale=0.002):
+    def get_contact_forces(self) -> typing.Tuple[float, float]:
         """
-        Render an averaged ground-reaction normal as a debug line.
+        Return the net x-axis contact forces for the right and left foot.
 
-        Parameters
-        ----------
-        color : tuple[float, float, float], default (0, 1, 0)
-            RGB color in [0,1].
-        scale : float, default 0.002
-            Visual scale factor converting Newtons to line length.
+        The method queries PyBullet for contacts between the robot and the ground
+        on each foot link, then uses the private helper `_compute_force(...)`
+        to aggregate the force component along the world x-axis.
+
+        Requirements
+        ------------
+        - `self.robot_id` : int
+            PyBullet body id of the robot.
+        - `self.plane_id` : int
+            PyBullet body id of the ground/plane.
+        - `self.rf_link_id` : int
+            Link index of the right foot.
+        - `self.lf_link_id` : int
+            Link index of the left foot.
+        - `_compute_force(contacts) -> tuple[float, Any]`
+            Helper that returns the x-axis force [N] as its first element.
+            It should return 0.0 if `contacts` is empty.
+
+        Returns
+        -------
+        (float, float)
+            `(Fx_right, Fx_left)` in Newtons, world frame.
 
         Notes
         -----
-        - Aggregates all robot–plane contacts, averages contact locations,
-          sums normal forces, and draws a single arrow along the last
-          observed contact normal.
-        - Updates a persistent debug line if it already exists.
+        - Only contacts with `bodyA=self.robot_id`, `bodyB=self.plane_id`,
+          and `linkIndexA` equal to the corresponding foot link are considered.
+        - If a foot has no active contacts, its returned force is expected to be 0.0.
+        - This method assumes `_compute_force` already applies the correct
+          Newton third-law sign convention to yield the force exerted on the robot.
         """
-        # iterate all foot links if you want per-foot colors
-        cps_all = []
-
-        cps_all.extend(pb.getContactPoints(bodyA=self.robot_id, bodyB=self.plane_id))
-
-        mean_x = 0.0
-        mean_y = 0.0
-        mean_z = 0.0
-        total_force = 0.0
-        n_B = [0.0, 0.0, 0.0]
-        for cp in cps_all:
-            # tuple fields (relevant):
-            # cp[4]=posOnA (world xyz), cp[5]=posOnB, cp[6]=normalOnB (world xyz),
-            # cp[7]=distance, cp[8]=normalForce
-            posB = cp[6]
-            n_B = cp[7]
-            fN = cp[9]  # Newtons
-            mean_x += posB[0]
-            mean_y += posB[1]
-            mean_z += posB[2]
-            total_force += fN
-
-        if len(cps_all) is not 0:
-            start = [mean_x / len(cps_all), mean_y / len(cps_all), mean_z / len(cps_all)]
-            end = (
-                start[0] + n_B[0] * total_force * scale,
-                start[1] + n_B[1] * total_force * scale,
-                start[2] + n_B[2] * total_force * scale,
+        rf_force, _ = _compute_force(
+            pb.getContactPoints(
+                bodyA=self.robot_id, bodyB=self.plane_id, linkIndexA=self.rf_link_id
             )
+        )
 
-            # arrow for normal force
-            if self._displayed_lines is None:
-                self._displayed_lines = pb.addUserDebugLine(
-                    start, end, lineColorRGB=color, lineWidth=3
-                )
-            else:
-                pb.addUserDebugLine(
-                    start,
-                    end,
-                    lineColorRGB=color,
-                    lineWidth=3,
-                    replaceItemUniqueId=self._displayed_lines,
-                )
+        lf_force, _ = _compute_force(
+            pb.getContactPoints(
+                bodyA=self.robot_id, bodyB=self.plane_id, linkIndexA=self.lf_link_id
+            )
+        )
+
+        return rf_force, lf_force
 
     def draw_points(
         self,

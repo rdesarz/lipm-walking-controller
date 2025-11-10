@@ -185,4 +185,19 @@ def plot_feet_and_com(
     ax2.legend(loc="center left", bbox_to_anchor=(1, 0.5))
     ax2.set_title(f"{title_prefix} — plan view (x–y)")
 
-    plt.show()
+
+def plot_contact_forces(t, force_rf, force_lf, title="Contact force Fx"):
+    t = np.asarray(t).ravel()
+    force_rf = np.asarray(force_rf).ravel()
+    force_lf = np.asarray(force_lf).ravel()
+    assert t.size == force_rf.size == force_lf.size
+
+    plt.figure(figsize=(12, 8), layout="constrained")
+    plt.plot(t, force_rf, label="right foot")
+    plt.plot(t, force_lf, label="left foot")
+    plt.xlabel("t [s]")
+    plt.ylabel("Normal force [N]")
+    plt.title(title)
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()

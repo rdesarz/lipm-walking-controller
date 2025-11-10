@@ -113,5 +113,14 @@ class Talos:
 
         return self.model.joints[jid].idx_q if jid < n_joints else None
 
-    def get_locked_joints_idx(self):
+    @staticmethod
+    def get_locked_joints_idx():
         return range(14, 46)
+
+    @staticmethod
+    def get_rf_link_name():
+        return "leg_right_6_link"
+
+    @staticmethod
+    def get_lf_link_name():
+        return "leg_left_6_link"
