@@ -1,4 +1,7 @@
+import abc
+from abc import abstractmethod
 from dataclasses import dataclass
+from enum import Enum
 
 import numpy as np
 from scipy.linalg import solve_discrete_are
@@ -251,3 +254,35 @@ def update_control(ctrl_mat: PreviewControllerMatrices, current_zmp, zmp_ref, x,
     y_next[1:] = ctrl_mat.A @ y[1:] + ctrl_mat.B.ravel() * u[1]
 
     return u, x_next, y_next
+
+
+class State(Enum):
+    DS = 1
+    SS_LEFT = 2
+    SS_RIGHT = 3
+
+
+class Controller(abc.ABC):
+    @abstractmethod
+    def update(self, t: float):
+        pass
+
+
+class PreviewController(Controller):
+    def __init__(self):
+        self.current_state = State.DS
+
+    def update(self, t: float):
+        pass
+
+    def get_current_state(self):
+        return self.current_state
+
+    def get_com_pos(self):
+        pass
+
+    def get_right_foot_se3(self):
+        pass
+
+    def get_left_foot_se3(self):
+        pass
