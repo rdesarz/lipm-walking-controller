@@ -446,37 +446,3 @@ def get_active_polygon(t: float, steps_pose, t_ss: float, t_ds: float, foot_shap
         return compute_single_support_polygon(steps_pose[-1], foot_shape)
     else:
         return compute_double_support_polygon(steps_pose[i], steps_pose[i + 1], foot_shape)
-
-
-class WalkingPhase(Enum):
-    SINGLE_SUPPORT = 2
-    DOUBLE_SUPPORT = 3
-
-
-class SupportFoot(Enum):
-    RIGHT = 1
-    LEFT = 2
-    BOTH = 3
-
-
-@dataclass
-class Params:
-    t_ss: float = 0.8  # [s]
-    t_ds: float = 0.4  # [s]
-    force_threshold: float = 50  # [N]
-
-
-def compute_walking_phase(
-    phase: WalkingPhase,
-    t_phase: float,
-    params: Params,
-    contact_force: typing.Optional[float] = None,
-):
-    if phase == WalkingPhase.DOUBLE_SUPPORT:
-        if t_phase > params.t_ds:
-            return WalkingPhase.SINGLE_SUPPORT
-    elif phase == WalkingPhase.SINGLE_SUPPORT:
-        if t_phase > 0.5 * params.t_ss and contact_force > params.force_threshold:
-            return WalkingPhase.DOUBLE_SUPPORT
-
-    return None

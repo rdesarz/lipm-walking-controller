@@ -1,4 +1,5 @@
 import abc
+import typing
 from abc import abstractmethod
 from dataclasses import dataclass
 from enum import Enum
@@ -262,18 +263,53 @@ class State(Enum):
     SS_RIGHT = 3
 
 
-class Controller(abc.ABC):
-    @abstractmethod
-    def update(self, t: float):
-        pass
+@dataclass
+class WalkingFSMParams:
+    t_ss: float = 0.8  # [s]
+    t_ds: float = 0.4  # [s]
+    force_threshold: float = 50  # [N]
 
 
-class PreviewController(Controller):
+class WalkingStateMachine:
+    def __init__(self, params: WalkingFSMParams):
+        self.params = params
+        self.state = State.DS
+        self.next_ss_state = State.SS_RIGHT
+
+    def update(
+        self,
+        t_phase: float,
+        rf_contact_force: float,
+        lf_contact_force: float,
+    ):
+        if self.state == State.DS:
+            if t_phase > self.params.t_ds:
+                if self.next_ss_state == State.SS_RIGHT:
+                    self.state = State.SS_RIGHT
+                    self.next_ss_state = State.SS_LEFT
+                elif self.next_ss_state == State.SS_LEFT:
+                    self.state = State.SS_LEFT
+                    self.next_ss_state = State.SS_RIGHT
+        elif self.state == State.SS_RIGHT:
+            if t_phase > 0.5 * self.params.t_ss and rf_contact_force > self.params.force_threshold:
+                self.state = State.DS
+        elif self.state == State.SS_LEFT:
+            if t_phase > 0.5 * self.params.t_ss and lf_contact_force > self.params.force_threshold:
+                self.state = State.DS
+
+        return None
+
+    def get_current_state(self) -> State:
+        return self.state
+
+
+class PreviewController:
     def __init__(self):
         self.current_state = State.DS
+        self.state_machine = WalkingStateMachine(WalkingFSMParams())
 
-    def update(self, t: float):
-        pass
+    def update(self, t: float, rf_contact_force: float, lf_contact_force: float):
+        self.state_machine.update(t, rf_contact_force, lf_contact_force)
 
     def get_current_state(self):
         return self.current_state
