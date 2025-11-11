@@ -311,6 +311,9 @@ class PreviewController:
     def update(self, t: float, rf_contact_force: float, lf_contact_force: float):
         self.state_machine.update(t, rf_contact_force, lf_contact_force)
 
+        if self.state_machine.get_current_state() == State.DS:
+            # In double support
+
     def get_current_state(self):
         return self.current_state
 
