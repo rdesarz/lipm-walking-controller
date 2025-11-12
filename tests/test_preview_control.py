@@ -105,23 +105,21 @@ class TestWalkingPhase(unittest.TestCase):
     def test_begin_double_support(self):
         wsm = WalkingStateMachine(self.params, initial_state=State.DS)
 
-        wsm.update(t_phase=0.0, rf_contact_force=100.0, lf_contact_force=100.0)
+        wsm.update(t=0.0, rf_contact_force=100.0, lf_contact_force=100.0)
 
         self.assertEqual(wsm.get_current_state(), State.DS)
 
     def test_switch_to_single_support(self):
         wsm = WalkingStateMachine(self.params, initial_state=State.DS)
 
-        wsm.update(t_phase=self.params.t_ds + 0.1, rf_contact_force=0.0, lf_contact_force=0.0)
+        wsm.update(t=self.params.t_ds + 0.1, rf_contact_force=0.0, lf_contact_force=0.0)
 
         self.assertEqual(wsm.get_current_state(), State.SS_RIGHT)
 
     def test_do_not_switch_to_ds_if_beginning_of_phase(self):
         wsm = WalkingStateMachine(self.params, initial_state=State.SS_RIGHT)
 
-        wsm.update(
-            t_phase=0.0, rf_contact_force=0.0, lf_contact_force=self.params.force_threshold + 10
-        )
+        wsm.update(t=0.0, rf_contact_force=0.0, lf_contact_force=self.params.force_threshold + 10)
 
         self.assertEqual(wsm.get_current_state(), State.SS_RIGHT)
 
@@ -129,7 +127,7 @@ class TestWalkingPhase(unittest.TestCase):
         wsm = WalkingStateMachine(self.params, initial_state=State.SS_RIGHT)
 
         wsm.update(
-            t_phase=self.params.t_ss * 0.75,
+            t=self.params.t_ss * 0.75,
             rf_contact_force=0.0,
             lf_contact_force=self.params.force_threshold - 10,
         )
@@ -140,7 +138,7 @@ class TestWalkingPhase(unittest.TestCase):
         wsm = WalkingStateMachine(self.params, initial_state=State.SS_LEFT)
 
         wsm.update(
-            t_phase=self.params.t_ss * 0.75,
+            t=self.params.t_ss * 0.75,
             rf_contact_force=self.params.force_threshold + 10,
             lf_contact_force=0.0,
         )

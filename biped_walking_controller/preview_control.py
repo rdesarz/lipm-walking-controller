@@ -310,26 +310,32 @@ class WalkingStateMachine:
         self.params = params
         self.state = initial_state
         self.next_ss_state = State.SS_RIGHT
+        self.t_start = 0.0
 
     def update(
         self,
-        t_phase: float,
+        t: float,
         rf_contact_force: float,
         lf_contact_force: float,
     ):
+        delta_t = (t - self.t_start)
         if self.state == State.DS:
-            if t_phase > self.params.t_ds:
+            if delta_t > self.params.t_ds:
                 if self.next_ss_state == State.SS_RIGHT:
+                    self.t_start = t
                     self.state = State.SS_RIGHT
                     self.next_ss_state = State.SS_LEFT
                 elif self.next_ss_state == State.SS_LEFT:
+                    self.t_start = t
                     self.state = State.SS_LEFT
                     self.next_ss_state = State.SS_RIGHT
         elif self.state == State.SS_RIGHT:
-            if t_phase > 0.5 * self.params.t_ss and lf_contact_force > self.params.force_threshold:
+            if delta_t > 0.5 * self.params.t_ss and lf_contact_force > self.params.force_threshold:
+                self.t_start = t
                 self.state = State.DS
         elif self.state == State.SS_LEFT:
-            if t_phase > 0.5 * self.params.t_ss and rf_contact_force > self.params.force_threshold:
+            if delta_t > 0.5 * self.params.t_ss and rf_contact_force > self.params.force_threshold:
+                self.t_start = t
                 self.state = State.DS
 
     def get_current_state(self) -> State:

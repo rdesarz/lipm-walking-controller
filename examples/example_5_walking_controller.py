@@ -21,8 +21,9 @@ from biped_walking_controller.preview_control import (
     update_control,
     compute_zmp_ref,
     cubic_spline_interpolation,
+    WalkingStateMachine,
+    WalkingFSMParams,
     State,
-    CentroidalPlanner,
 )
 
 from biped_walking_controller.model import Talos, q_from_base_and_joints
@@ -182,7 +183,24 @@ def main():
         traj_generator=BezierCurveFootPathGenerator(max_height_foot),
     )
 
-    # TODO: append instead of assigning
+    params = WalkingFSMParams(t_ss=t_ss, t_ds=t_ds, force_threshold=50)
+    state_machine = WalkingStateMachine(params=params, initial_state=State.DS)
+
+    zmp_ref = compute_zmp_ref(
+        t=t,
+        com_initial_pose=com_initial_target[0:2],
+        steps=steps_pose[:, 0:2],
+        ss_t=t_ss,
+        ds_t=t_ds,
+        t_init=t_init,
+        t_final=t_end,
+        interp_fn=cubic_spline_interpolation,
+    )
+
+    zmp_padded = np.vstack(
+        [zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)]
+    )
+
     com_pin_pos = np.zeros((len(phases), 3))
     com_ref_pos = np.zeros((len(phases), 3))
     com_pb_pos = np.zeros((len(phases), 3))
@@ -200,8 +218,6 @@ def main():
     rf_forces = np.zeros((len(phases), 1))
     lf_forces = np.zeros((len(phases), 1))
 
-    controller = CentroidalPlanner()
-
     # We start the walking phase
     for k, _ in enumerate(phases[:-2]):
         # Get the current configuration of the robot from the simulator
@@ -211,35 +227,52 @@ def main():
         pin.forwardKinematics(talos.model, talos.data, q_init)
         pin.updateFramePlacements(talos.model, talos.data)
 
-        controller.update(t)
+        zmp_ref_horizon = zmp_padded[k + 1 : k + ctrler_params.n_preview_steps]
+
+        _, x_k, y_k = update_control(
+            ctrler_mat, zmp_padded[k], zmp_ref_horizon, x_k.copy(), y_k.copy()
+        )
+
+        zmp_pos[k] = simulator.get_zmp_pose()
 
         # The CoM target is meant to follow the computed x and y and stay at constant height zc from the feet
-        com_target = controller.get_com_pos()
+        com_target = np.array([x_k[1], y_k[1], ctrler_params.zc])
+
+        rf_forces[k], lf_forces[k] = simulator.get_contact_forces()
+        state_machine.update(t=t, rf_contact_force=rf_forces[k], lf_contact_force=lf_forces[k])
 
         # Alternate between feet
-        # TODO: Use phase to compute inverse kinematics
-        if controller.get_current_state() == State.SS_RIGHT:
+        if phases[k] < 0.0:
             ik_sol_params.fixed_foot_frame = talos.right_foot_id
             ik_sol_params.moving_foot_frame = talos.left_foot_id
+
+            oMf_lf = pin.SE3(oMf_lf_tgt.rotation, lf_path[k])
             q_des, dq = solve_inverse_kinematics(
                 q_init,
                 com_target,
-                oMf_fixed_foot=controller.get_right_foot_se3(),
-                oMf_moving_foot=controller.get_left_foot_se3(),
+                oMf_fixed_foot=oMf_rf_tgt,
+                oMf_moving_foot=oMf_lf,
                 oMf_torso=oMf_torso,
                 params=ik_sol_params,
             )
+
+            oMf_lf_tgt = pin.SE3(oMf_lf_tgt.rotation, lf_path[k + 1])
+
         else:
             ik_sol_params.fixed_foot_frame = talos.left_foot_id
             ik_sol_params.moving_foot_frame = talos.right_foot_id
+
+            oMf_rf = pin.SE3(oMf_rf_tgt.rotation, rf_path[k])
             q_des, dq = solve_inverse_kinematics(
                 q_init,
                 com_target,
-                oMf_fixed_foot=controller.get_left_foot_se3(),
-                oMf_moving_foot=controller.get_right_foot_se3(),
+                oMf_fixed_foot=oMf_lf_tgt,
+                oMf_moving_foot=oMf_rf,
                 oMf_torso=oMf_torso,
                 params=ik_sol_params,
             )
+
+            oMf_rf_tgt = pin.SE3(oMf_rf_tgt.rotation, rf_path[k + 1])
 
         simulator.apply_joints_pos_to_robot(q_des)
 
@@ -249,8 +282,6 @@ def main():
         simulator.step()
 
         if args.plot_results:
-            zmp_pos[k] = simulator.get_zmp_pose()
-
             pin.computeCentroidalMap(talos.model, talos.data, q_init)
             com_pin = pin.centerOfMass(talos.model, talos.data, q_init)
 
@@ -270,6 +301,7 @@ def main():
             rf_forces[k], lf_forces[k] = simulator.get_contact_forces()
 
     if args.plot_results:
+
         zmp_ref_plot = np.zeros((zmp_ref.shape[0], 3))
         zmp_ref_plot[:, :2] = zmp_ref
 
