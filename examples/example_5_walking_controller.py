@@ -22,7 +22,7 @@ from biped_walking_controller.preview_control import (
     compute_zmp_ref,
     cubic_spline_interpolation,
     State,
-    PreviewController,
+    CentroidalPlanner,
 )
 
 from biped_walking_controller.model import Talos, q_from_base_and_joints
@@ -200,7 +200,7 @@ def main():
     rf_forces = np.zeros((len(phases), 1))
     lf_forces = np.zeros((len(phases), 1))
 
-    controller = PreviewController()
+    controller = CentroidalPlanner()
 
     # We start the walking phase
     for k, _ in enumerate(phases[:-2]):

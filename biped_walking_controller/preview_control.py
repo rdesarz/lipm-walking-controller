@@ -303,25 +303,29 @@ class WalkingStateMachine:
         return self.state
 
 
-class PreviewController:
-    def __init__(self):
-        self.current_state = State.DS
-        self.state_machine = WalkingStateMachine(WalkingFSMParams())
+class CentroidalPlanner:
+    def __init__(
+        self,
+        dt: float,
+        com_initial_target: np.ndarray,
+        state_machine: WalkingStateMachine,
+        ctrler_params: PreviewControllerParams,
+    ):
+        self.state_machine = state_machine
+        self.ctrler_mat = compute_preview_control_matrices(ctrler_params, dt)
+        self.x = np.array([0.0, com_initial_target[0], 0.0, 0.0], dtype=float)
+        self.y = np.array([0.0, com_initial_target[1], 0.0, 0.0], dtype=float)
 
     def update(self, t: float, rf_contact_force: float, lf_contact_force: float):
-        self.state_machine.update(t, rf_contact_force, lf_contact_force)
+        # Update buffers based on state machine transition
+        # if self.state_machine.get_current_state() == State.DS:
 
-        if self.state_machine.get_current_state() == State.DS:
-            # In double support
+        # Update control
+        zmp_ref_horizon = build_zmp_horizon()
 
-    def get_current_state(self):
-        return self.current_state
+        _, self.x, self.y = update_control(
+            self.ctrler_mat, zmp_ref_horizon[0], zmp_ref_horizon, self.x.copy(), self.y.copy()
+        )
 
-    def get_com_pos(self):
-        pass
-
-    def get_right_foot_se3(self):
-        pass
-
-    def get_left_foot_se3(self):
-        pass
+    def get_com_pos(self) -> typing.Tuple[float, float]:
+        return self.x[1], self.y[1]
