@@ -112,23 +112,18 @@ def plot_feet_and_com(
     zmp_ref = zmp_ref[mask]
 
     # -------- Time plots (x,z,y in meters) --------
-    fig, axes = plt.subplots(3, sharex=True, layout="constrained", figsize=(12, 8))
+    fig, axes = plt.subplots(2, sharex=True, layout="constrained", figsize=(8, 8))
 
     series = [
-        ("LF pin", lf_pin_pos),
         ("LF ref", lf_ref_pos),
         ("LF pb", lf_pb_pos),
-        ("RF pin", rf_pin_pos),
         ("RF ref", rf_ref_pos),
         ("RF pb", rf_pb_pos),
-        ("CoM pin", com_pin_pos),
-        ("CoM pb", com_pb_pos),
-        ("CoM ref", com_ref_pos),
         ("ZMP ref", zmp_ref),
         ("ZMP pb", zmp_pb),
     ]
-    coord_labels = ["x [m]", "z [m]", "y [m]"]
-    coord_idx = [0, 2, 1]  # match your original order
+    coord_labels = ["x [m]", "y [m]"]
+    coord_idx = [0, 1]  # match your original order
 
     linestyles = {
         "pin": "-",
@@ -143,13 +138,17 @@ def plot_feet_and_com(
             ax.plot(t, arr[:, j], linestyle=linestyles[key], label=name)
         ax.set_ylabel(coord_labels[coord_idx.index(j)])
         ax.grid(True)
+        ax.legend(loc="center left")
+
+    axes[0].set_ylim(0.0, 0.6)
+    axes[1].set_ylim(-0.12, 0.12)
 
     axes[-1].set_xlabel("t [s]")
 
     # One combined legend outside
     handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="upper center", ncols=5, frameon=False)
-    fig.suptitle(f"{title_prefix} — time profiles")
+    fig.legend(handles, labels, loc="center left", bbox_to_anchor=(1, 0.5))
+    fig.suptitle(f"ZMP and feet trajectories (with improvements)")
 
     # -------- Plan view (x vs y) --------
     plt.rcParams.update({"font.size": 14})
