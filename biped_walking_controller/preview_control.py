@@ -251,3 +251,32 @@ def update_control(ctrl_mat: PreviewControllerMatrices, current_zmp, zmp_ref, x,
     y_next[1:] = ctrl_mat.A @ y[1:] + ctrl_mat.B.ravel() * u[1]
 
     return u, x_next, y_next
+
+
+class CentroidalPlanner:
+    def __init__(
+        self,
+        dt: float,
+        com_initial_target: np.ndarray,
+        state_machine: WalkingStateMachine,
+        params: PreviewControllerParams,
+    ):
+        self.state_machine = state_machine
+        self.params = params
+        self.ctrler_mat = compute_preview_control_matrices(params, dt)
+        self.x = np.array([0.0, com_initial_target[0], 0.0, 0.0], dtype=float)
+        self.y = np.array([0.0, com_initial_target[1], 0.0, 0.0], dtype=float)
+
+    def update(self, t: float, rf_contact_force: float, lf_contact_force: float):
+        # Update buffers based on state machine transition
+        # if self.state_machine.get_current_state() == State.DS:
+
+        # Update control
+        zmp_ref_horizon = build_zmp_horizon()
+
+        _, self.x, self.y = update_control(
+            self.ctrler_mat, zmp_ref_horizon[0], zmp_ref_horizon, self.x.copy(), self.y.copy()
+        )
+
+    def get_com_pos(self) -> typing.Tuple[float, float]:
+        return self.x[1], self.y[1]
