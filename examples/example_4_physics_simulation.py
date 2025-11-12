@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 from biped_walking_controller.foot import (
     compute_feet_path_and_poses,
     BezierCurveFootPathGenerator,
+    SinusoidFootPathGenerator,
 )
 
 from biped_walking_controller.inverse_kinematic import InvKinSolverParams, solve_inverse_kinematics
@@ -21,6 +22,7 @@ from biped_walking_controller.preview_control import (
     update_control,
     compute_zmp_ref,
     cubic_spline_interpolation,
+    linear_interpolation,
 )
 
 from biped_walking_controller.model import Talos, q_from_base_and_joints
@@ -48,7 +50,7 @@ def main():
     t_ds = 0.3  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
     t_end = 0.4
-    n_steps = 15  # Number of steps executed by the robot
+    n_steps = 5  # Number of steps executed by the robot
     l_stride = 0.1  # Length of the stride
     max_height_foot = 0.01  # Maximal height of the swing foot
 
@@ -178,6 +180,7 @@ def main():
         l_stride,
         dt,
         traj_generator=BezierCurveFootPathGenerator(max_height_foot),
+        # traj_generator=SinusoidFootPathGenerator(max_height_foot),
     )
 
     zmp_ref = compute_zmp_ref(
@@ -188,6 +191,7 @@ def main():
         ds_t=t_ds,
         t_init=t_init,
         t_final=t_end,
+        # interp_fn=linear_interpolation,
         interp_fn=cubic_spline_interpolation,
     )
 
@@ -296,20 +300,22 @@ def main():
         zmp_ref_plot = np.zeros((zmp_ref.shape[0], 3))
         zmp_ref_plot[:, :2] = zmp_ref
 
+        i_start = 2 * 240
+        i_end = int(8.65 * 240.0)
         plot_feet_and_com(
             title_prefix="Walking controller",
-            t=t,
-            lf_pin_pos=lf_pin_pos,
-            rf_pin_pos=rf_pin_pos,
-            lf_ref_pos=lf_ref_pos,
-            rf_ref_pos=rf_ref_pos,
-            lf_pb_pos=lf_pb_pos,
-            rf_pb_pos=rf_pb_pos,
-            com_ref_pos=com_ref_pos,
-            com_pb_pos=com_pb_pos,
-            com_pin_pos=com_pin_pos,
-            zmp_pb=zmp_pos,
-            zmp_ref=zmp_ref_plot,
+            t=t[i_start:i_end],
+            lf_pin_pos=lf_pin_pos[i_start:i_end],
+            rf_pin_pos=rf_pin_pos[i_start:i_end],
+            lf_ref_pos=lf_ref_pos[i_start:i_end],
+            rf_ref_pos=rf_ref_pos[i_start:i_end],
+            lf_pb_pos=lf_pb_pos[i_start:i_end],
+            rf_pb_pos=rf_pb_pos[i_start:i_end],
+            com_ref_pos=com_ref_pos[i_start:i_end],
+            com_pb_pos=com_pb_pos[i_start:i_end],
+            com_pin_pos=com_pin_pos[i_start:i_end],
+            zmp_pb=zmp_pos[i_start:i_end],
+            zmp_ref=zmp_ref_plot[i_start:i_end],
         )
 
         plot_contact_forces(t=t, force_rf=rf_forces, force_lf=lf_forces)
