@@ -92,6 +92,41 @@ def compute_zmp_ref(
     return zmp_ref
 
 
+def build_zmp_horizon(
+    t, com_initial_pose, steps, ss_t, ds_t, t_init, t_final, interp_fn=cubic_spline_interpolation
+):
+    T = len(t)
+    zmp_ref = np.zeros([T, 2])
+
+    # Step on the first foot
+    mask = t < t_init
+    alpha = t[mask] / t_init
+    zmp_ref[mask, :] = interp_fn(alpha, com_initial_pose, steps[0])
+
+    # Alternate between foot
+    for idx, (current_step, next_step) in enumerate(zip(steps[:-2], steps[1:-1])):
+        # Compute current time range
+        t_start = t_init + idx * (ss_t + ds_t)
+
+        # Add single support phase
+        zmp_ref[(t >= t_start) & (t < t_start + ss_t)] = current_step
+
+        # Add double support phase
+        mask = (t >= t_start + ss_t) & (t < t_start + ss_t + ds_t + t[1])
+        alpha = (t[mask] - (t_start + ss_t)) / ds_t
+        zmp_ref[mask, :] = interp_fn(alpha, current_step, next_step)
+
+    # Last phase: SS on last-but-one, then blend to midpoint of last two
+    t_start = t_init + (len(steps) - 2) * (ss_t + ds_t)
+    zmp_ref[(t >= t_start) & (t < t_start + ss_t)] = steps[-2]
+
+    mask = (t >= t_start + ss_t) & (t < t_start + ss_t + t_final)
+    alpha = (t[mask] - (t_start + ss_t)) / t_final
+    zmp_ref[mask, :] = interp_fn(alpha, steps[-2], (steps[-1] + steps[-2]) / 2.0)
+
+    return zmp_ref
+
+
 @dataclass
 class PreviewControllerParams:
     """
@@ -271,9 +306,9 @@ class WalkingFSMParams:
 
 
 class WalkingStateMachine:
-    def __init__(self, params: WalkingFSMParams):
+    def __init__(self, params: WalkingFSMParams, initial_state=State.DS):
         self.params = params
-        self.state = State.DS
+        self.state = initial_state
         self.next_ss_state = State.SS_RIGHT
 
     def update(
@@ -291,13 +326,11 @@ class WalkingStateMachine:
                     self.state = State.SS_LEFT
                     self.next_ss_state = State.SS_RIGHT
         elif self.state == State.SS_RIGHT:
-            if t_phase > 0.5 * self.params.t_ss and rf_contact_force > self.params.force_threshold:
-                self.state = State.DS
-        elif self.state == State.SS_LEFT:
             if t_phase > 0.5 * self.params.t_ss and lf_contact_force > self.params.force_threshold:
                 self.state = State.DS
-
-        return None
+        elif self.state == State.SS_LEFT:
+            if t_phase > 0.5 * self.params.t_ss and rf_contact_force > self.params.force_threshold:
+                self.state = State.DS
 
     def get_current_state(self) -> State:
         return self.state
@@ -309,10 +342,11 @@ class CentroidalPlanner:
         dt: float,
         com_initial_target: np.ndarray,
         state_machine: WalkingStateMachine,
-        ctrler_params: PreviewControllerParams,
+        params: PreviewControllerParams,
     ):
         self.state_machine = state_machine
-        self.ctrler_mat = compute_preview_control_matrices(ctrler_params, dt)
+        self.params = params
+        self.ctrler_mat = compute_preview_control_matrices(params, dt)
         self.x = np.array([0.0, com_initial_target[0], 0.0, 0.0], dtype=float)
         self.y = np.array([0.0, com_initial_target[1], 0.0, 0.0], dtype=float)
 
