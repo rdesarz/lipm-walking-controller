@@ -51,7 +51,7 @@ def main():
     t_ds = 0.3  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
     t_end = 0.4
-    n_steps = 15  # Number of steps executed by the robot
+    n_steps = 5  # Number of steps executed by the robot
     l_stride = 0.1  # Length of the stride
     max_height_foot = 0.01  # Maximal height of the swing foot
 
@@ -217,6 +217,7 @@ def main():
 
     rf_forces = np.zeros((len(phases), 1))
     lf_forces = np.zeros((len(phases), 1))
+    states = np.zeros((len(phases), 1))
 
     # We start the walking phase
     for k, _ in enumerate(phases[:-2]):
@@ -239,7 +240,8 @@ def main():
         com_target = np.array([x_k[1], y_k[1], ctrler_params.zc])
 
         rf_forces[k], lf_forces[k] = simulator.get_contact_forces()
-        state_machine.update(t=t, rf_contact_force=rf_forces[k], lf_contact_force=lf_forces[k])
+        state_machine.update(t=k * dt, rf_contact_force=rf_forces[k], lf_contact_force=lf_forces[k])
+        states[k] = state_machine.get_current_state().value
 
         # Alternate between feet
         if phases[k] < 0.0:
@@ -321,7 +323,7 @@ def main():
             zmp_ref=zmp_ref_plot,
         )
 
-        plot_contact_forces(t=t, force_rf=rf_forces, force_lf=lf_forces)
+        plot_contact_forces(t=t, force_rf=rf_forces, force_lf=lf_forces, states=states)
 
         plt.show()
 
