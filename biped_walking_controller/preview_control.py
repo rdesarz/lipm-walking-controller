@@ -293,20 +293,23 @@ def update_control(ctrl_mat: PreviewControllerMatrices, current_zmp, zmp_ref, x,
 
 
 class State(Enum):
+    INIT = 0
     DS = 1
     SS_LEFT = 2
     SS_RIGHT = 3
-
+    END = 4
 
 @dataclass
 class WalkingFSMParams:
+    t_init: float = 2.0 # [s]
+    t_end: float = 2.0 # [s]
     t_ss: float = 0.8  # [s]
-    t_ds: float = 0.4  # [s]
+    t_ds: float = 0.3  # [s]
     force_threshold: float = 50  # [N]
 
 
 class WalkingStateMachine:
-    def __init__(self, params: WalkingFSMParams, initial_state=State.DS):
+    def __init__(self, params: WalkingFSMParams, initial_state=State.INIT):
         self.params = params
         self.state = initial_state
         self.next_ss_state = State.SS_RIGHT
@@ -329,6 +332,16 @@ class WalkingStateMachine:
                     self.t_start = t
                     self.state = State.SS_LEFT
                     self.next_ss_state = State.SS_RIGHT
+        elif self.state == State.INIT:
+            if delta_t > self.params.t_init:
+                if self.next_ss_state == State.SS_RIGHT:
+                    self.t_start = t
+                    self.state = State.SS_RIGHT
+                    self.next_ss_state = State.SS_LEFT
+                elif self.next_ss_state == State.SS_LEFT:
+                    self.t_start = t
+                    self.state = State.SS_LEFT
+                    self.next_ss_state = State.SS_RIGHT
         elif self.state == State.SS_RIGHT:
             if delta_t > 0.5 * self.params.t_ss and lf_contact_force > self.params.force_threshold:
                 self.t_start = t
@@ -337,6 +350,8 @@ class WalkingStateMachine:
             if delta_t > 0.5 * self.params.t_ss and rf_contact_force > self.params.force_threshold:
                 self.t_start = t
                 self.state = State.DS
+        elif self.state == State.END:
+            pass
 
     def get_current_state(self) -> State:
         return self.state
