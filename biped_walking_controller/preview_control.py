@@ -299,10 +299,11 @@ class State(Enum):
     SS_RIGHT = 3
     END = 4
 
+
 @dataclass
 class WalkingFSMParams:
-    t_init: float = 2.0 # [s]
-    t_end: float = 2.0 # [s]
+    t_init: float = 2.0  # [s]
+    t_end: float = 2.0  # [s]
     t_ss: float = 0.8  # [s]
     t_ds: float = 0.3  # [s]
     force_threshold: float = 50  # [N]
@@ -321,9 +322,10 @@ class WalkingStateMachine:
         rf_contact_force: float,
         lf_contact_force: float,
     ):
-        delta_t = (t - self.t_start)
-        if self.state == State.DS:
-            if delta_t > self.params.t_ds:
+        delta_t = t - self.t_start
+
+        if self.state == State.INIT:
+            if delta_t > self.params.t_init:
                 if self.next_ss_state == State.SS_RIGHT:
                     self.t_start = t
                     self.state = State.SS_RIGHT
@@ -332,8 +334,8 @@ class WalkingStateMachine:
                     self.t_start = t
                     self.state = State.SS_LEFT
                     self.next_ss_state = State.SS_RIGHT
-        elif self.state == State.INIT:
-            if delta_t > self.params.t_init:
+        elif self.state == State.DS:
+            if delta_t > self.params.t_ds:
                 if self.next_ss_state == State.SS_RIGHT:
                     self.t_start = t
                     self.state = State.SS_RIGHT
