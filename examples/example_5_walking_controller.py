@@ -183,8 +183,8 @@ def main():
         traj_generator=BezierCurveFootPathGenerator(max_height_foot),
     )
 
-    params = WalkingFSMParams(t_ss=t_ss, t_ds=t_ds, force_threshold=50)
-    state_machine = WalkingStateMachine(params=params, initial_state=State.DS)
+    params = WalkingFSMParams(t_init=t_init, t_end=t_end, t_ss=t_ss, t_ds=t_ds, force_threshold=50)
+    state_machine = WalkingStateMachine(params=params, initial_state=State.INIT)
 
     zmp_ref = compute_zmp_ref(
         t=t,
