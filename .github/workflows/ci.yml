@@ -141,5 +141,5 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: |
-            ghcr.io/${{ github.repository }}/biped-walking-controller:${{ steps.vars.outputs.tag }}
-            ghcr.io/${{ github.repository }}/biped-walking-controller:latest
+            ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.tag }}
+            ghcr.io/${{ github.repository }}:latest
