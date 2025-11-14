@@ -9,6 +9,7 @@ on:
 
 jobs:
   lint:
+    name: "Lint (pylint)"
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -30,6 +31,7 @@ jobs:
         run: pylint biped_walking_controller || true  # drop `|| true` if you want hard fail
 
   tests:
+    name: "Tests & Coverage (pytest)"
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -59,6 +61,7 @@ jobs:
           fail_ci_if_error: true
 
   docs:
+    name: "Documentation"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -85,6 +88,7 @@ jobs:
         run: mkdocs gh-deploy --force
 
   docker:
+    name: "Docker"
     needs: [ tests ]           # only publish if tests passed
     runs-on: ubuntu-latest
     # run this job only when this workflow is triggered by a tag
