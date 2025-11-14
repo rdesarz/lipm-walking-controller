@@ -51,7 +51,14 @@ jobs:
             --cov-report=term-missing \
             --cov-report=xml \
             --cov-report=html
-      
+
+      - name: Upload coverage to Codecov
+        if: github.ref == 'refs/heads/main'
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          fail_ci_if_error: true
 
   docs:
     runs-on: ubuntu-latest

@@ -63,8 +63,3 @@ warn_unused_ignores = true
 warn_redundant_casts = true
 disallow_any_generics = true
 plugins = []
-
-[tool.pytest.ini_options]
-minversion = "8.0"
-testpaths = ["tests"]
-addopts = "-q"
