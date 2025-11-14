@@ -45,12 +45,7 @@ jobs:
         run: pip install -e ".[dev]" pytest pytest-cov
 
       - name: Run tests with coverage
-        run: |
-          pytest -q \
-            --cov=biped_walking_controller \
-            --cov-report=term-missing \
-            --cov-report=xml \
-            --cov-report=html
+        run: pytest
 
       - name: Upload coverage to Codecov
         if: github.ref == 'refs/heads/main'
