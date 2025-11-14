@@ -1,11 +1,9 @@
 # Getting started
 
-Docker is recommended to run the examples. Here are the commands that you need to setup the project:
+Docker is recommended to run the examples. You simply need to download the docker image associated with the project:
 
 ```bash
-git clone https://github.com/rdesarz/biped-walking-controller.git
-cd biped-walking-controller
-docker build -t biped-walking-controller .
+docker pull ghcr.io/rdesarz/biped-walking-controller/biped-walking-controller:latest
 ```
 
 You can then run several examples described in each section:

@@ -1,14 +1,19 @@
 name: Lint, tests, coverage and docs
 on:
   push:
+    tags:
+      - "v*"        # run workflow when pushing tags like v0.1.0
+    branches:
+      - "**"
   pull_request:
 
 jobs:
   lint:
+    name: "Lint (pylint)"
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: [ "3.10", "3.11" ]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -26,6 +31,7 @@ jobs:
         run: pylint biped_walking_controller || true  # drop `|| true` if you want hard fail
 
   tests:
+    name: "Tests & Coverage (pytest)"
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -55,6 +61,7 @@ jobs:
           fail_ci_if_error: true
 
   docs:
+    name: "Documentation"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -79,3 +86,60 @@ jobs:
       - name: Deploy documentation
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: mkdocs gh-deploy --force
+
+  docker:
+    name: "Docker"
+    needs: [ tests ]           # only publish if tests passed
+    runs-on: ubuntu-latest
+    # run this job only when this workflow is triggered by a tag
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: read
+      packages: write        # needed for ghcr
+      id-token: write        # recommended for ghcr
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Lowercase owner
+        run: echo "OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ env.OWNER_LC }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ env.OWNER_LC }}/biped_walking_controller
+          tags: |
+            type=ref,event=branch,branch=main
+            type=sha,format=long
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Extract tag
+        id: vars
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.tag }}
+            ghcr.io/${{ github.repository }}:latest
