@@ -65,6 +65,11 @@ disallow_any_generics = true
 plugins = []
 
 [tool.pytest.ini_options]
-minversion = "8.0"
 testpaths = ["tests"]
-addopts = "-q"
+addopts = [
+  "--maxfail=1",
+  "--disable-warnings",
+  "--cov=biped_walking_controller",
+  "--cov-report=term-missing:skip-covered",
+  "--cov-report=xml",
+]
