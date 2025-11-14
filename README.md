@@ -1,6 +1,6 @@
 # Biped Walking Controller
 
-[![CI](https://github.com/rdesarz/lipm-walking-controller/actions/workflows/build.yml/badge.svg)](https://github.com/rdesarz/lipm-walking-controller/actions/workflows/build.yml)
+[![CI](https://github.com/rdesarz/lipm-walking-controller/actions/workflows/ci.yml/badge.svg)](https://github.com/rdesarz/lipm-walking-controller/actions/workflows/ci.yml)
 ![Codecov](https://img.shields.io/codecov/c/github/rdesarz/biped-walking-controller/main)
 [![Docs](https://img.shields.io/badge/docs-online-blue)](https://rdesarz.github.io/biped-walking-controller)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
