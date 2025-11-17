@@ -15,7 +15,8 @@ from biped_walking_controller.foot import (
     BezierCurveFootPathGenerator,
 )
 
-if __name__ == "__main__":
+
+def main():
     # Parameters
     dt = 1 / 240.0  # 0.005  # Delta of time of the model simulation
 
@@ -203,3 +204,7 @@ if __name__ == "__main__":
 
     # Uncomment to save the plot
     # imageio.mimsave("img/traj.gif", frames[2:], fps=int(1/update_frequency * 2), loop=10) # Save at frame divided by 2
+
+
+if __name__ == "__main__":
+    main()

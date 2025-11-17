@@ -406,9 +406,9 @@ class Simulator:
         for j in range(pb.getNumJoints(self.robot_id)):
             info = pb.getJointInfo(self.robot_id, j)
             link_name = info[12].decode("ascii")
-            if link_name == model.get_lf_link_name():
+            if link_name == model.get_rf_link_name():
                 self.rf_link_id = info[0]
-            elif link_name == model.get_rf_link_name():
+            elif link_name == model.get_lf_link_name():
                 self.lf_link_id = info[0]
 
         # Build mapping between joints for both velocities and position
