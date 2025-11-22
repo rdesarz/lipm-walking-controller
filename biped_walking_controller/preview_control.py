@@ -1,11 +1,10 @@
-import abc
 import typing
-from abc import abstractmethod
 from dataclasses import dataclass
-from enum import Enum
 
 import numpy as np
 from scipy.linalg import solve_discrete_are
+
+from biped_walking_controller.state_machine import WalkingState, Foot
 
 
 def linear_interpolation(t: np.ndarray, pos_begin: np.ndarray, pos_end: np.ndarray) -> np.ndarray:
@@ -15,6 +14,13 @@ def linear_interpolation(t: np.ndarray, pos_begin: np.ndarray, pos_end: np.ndarr
 def cubic_spline_interpolation(
     t: np.ndarray, pos_begin: np.ndarray, pos_end: np.ndarray
 ) -> np.ndarray:
+    if isinstance(t, float):
+        return (
+            pos_begin
+            + 3.0 * (pos_end - pos_begin) * np.square(t)
+            - 2.0 * (pos_end - pos_begin) * np.pow(t, 3)
+        )
+
     return (
         pos_begin
         + 3.0 * (pos_end - pos_begin) * np.square(t)[:, None]
@@ -255,3 +261,243 @@ def update_control(ctrl_mat: PreviewControllerMatrices, current_zmp, zmp_ref, x,
     y_next[1:] = ctrl_mat.A @ y[1:] + ctrl_mat.B.ravel() * u[1]
 
     return u, x_next, y_next
+
+
+def build_zmp_horizon(
+    com_initial_target,
+    t_horizon: float,
+    t_state: float,
+    state: WalkingState,
+    delta_t: float,
+    current_step_idx: int,
+    steps_sequence: np.ndarray,
+    steps_foot: typing.List[Foot],
+    ss_t: float,
+    ds_t: float,
+    t_init: float,
+    t_end: float,
+    interp_fn=cubic_spline_interpolation,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Build a ZMP reference over a preview horizon based on the current walking state.
+
+    Parameters
+    ----------
+    t_horizon : float
+        Length of the preview horizon [s].
+    t_state : float
+        Time elapsed in the current state [s].
+    state : WalkingState
+        Current walking state (INIT, DS, SS_LEFT, SS_RIGHT, END).
+    delta_t : float
+        Sampling period of the preview horizon [s].
+    current_step_idx : int
+        Index of the current step in `steps_sequence`. Interpreted as:
+        - In SS: index of the current support foot.
+        - In DS: index of the *target* foot (previous is current_step_idx - 1).
+    steps_sequence : np.ndarray
+        Sequence of footsteps. Shape (N, 2) or (N, >=2).
+        Only the (x, y) components are used as ZMP targets.
+    ss_t : float
+        Duration of a single-support phase [s].
+    ds_t : float
+        Duration of a double-support phase [s].
+    t_init : float
+        Duration of the INIT phase [s].
+    t_end : float
+        Duration of the END phase [s].
+    interp_fn : callable
+        Interpolation function used in double support.
+        Expected signature: interp_fn(alpha, p0, p1)
+        where alpha in [0, 1], p0, p1 are 2D numpy arrays.
+
+    Returns
+    -------
+    t_samples : np.ndarray, shape (N,)
+        Relative time samples over the horizon, starting at 0.
+    zmp_horizon : np.ndarray, shape (N, 2)
+        ZMP reference (x, y) at each time sample.
+
+    Notes
+    -----
+    - This function does NOT enforce continuity with the *previous* ZMP reference.
+      At each call, the horizon is built from scratch from the current state.
+    - State-transition logic is a simple cyclic model:
+      INIT -> DS -> SS -> DS -> SS -> ... -> END
+      and the step index increments when leaving an SS state.
+    """
+    # Sanity checks and normalization
+    steps = np.asarray(steps_sequence, dtype=float)
+    if steps.ndim != 2 or steps.shape[0] == 0:
+        raise ValueError("steps_sequence must be a non-empty (N, D) array")
+
+    # Use only x, y
+    steps_xy = steps[:, :2]
+    n_steps = steps_xy.shape[0]
+
+    step_idx = int(np.clip(current_step_idx, 0, n_steps - 1))
+
+    def state_duration(s: WalkingState) -> float:
+        if s == WalkingState.INIT:
+            return t_init
+        if s == WalkingState.DS:
+            return ds_t
+        if s in (WalkingState.SS_LEFT, WalkingState.SS_RIGHT):
+            return ss_t
+        if s == WalkingState.END:
+            return t_end
+        raise ValueError(f"Unknown state: {s}")
+
+    def next_state_and_step(
+        s: WalkingState, idx: int, steps_foot: typing.List[Foot]
+    ) -> tuple[WalkingState, int]:
+        """Simple progression model over footsteps.
+
+        INIT -> DS(step 0)
+        DS(k) -> SS(k)
+        SS(k) -> DS(k+1) (clamped to last step)
+        END stays END
+        """
+        if s == WalkingState.DS or s == WalkingState.INIT:
+            # Land on target step
+            if idx < n_steps - 1:
+                return (
+                    WalkingState.SS_LEFT if steps_foot[idx] is Foot.LEFT else WalkingState.SS_RIGHT
+                ), idx
+            else:
+                return WalkingState.END, idx
+
+        if s in (WalkingState.SS_LEFT, WalkingState.SS_RIGHT):
+            # Move to next DS between current and next step
+            if idx < n_steps - 1:
+                return WalkingState.DS, idx + 1
+
+        if s == WalkingState.END:
+            return WalkingState.END, idx
+
+        raise ValueError(f"Unknown state: {s}")
+
+    def zmp_for_state(s: WalkingState, idx: int, t_in_state: float) -> np.ndarray:
+        """Return ZMP position (x, y) for a given state and time in state."""
+        # Clamp index
+        idx = int(np.clip(idx, 0, n_steps - 1))
+
+        if s == WalkingState.INIT:
+            # Keep ZMP on the first support
+            p0 = com_initial_target
+            p1 = steps_xy[0]
+
+            alpha = np.clip(t_in_state / t_init, 0.0, 1.0)
+            return interp_fn(alpha, p0, p1)
+
+        if s in (WalkingState.SS_LEFT, WalkingState.SS_RIGHT):
+            # ZMP fixed at current support foot
+            return steps_xy[idx]
+
+        if s == WalkingState.DS:
+            # ZMP moves between previous and current step
+            if idx <= 0:
+                p0 = com_initial_target
+                p1 = steps_xy[0]
+            else:
+                p0 = steps_xy[idx - 1]
+                p1 = steps_xy[idx]
+
+            alpha = np.clip(t_in_state / max(ds_t, 1e-6), 0.0, 1.0)
+            return interp_fn(alpha, p0, p1)
+
+        if s == WalkingState.END:
+            # Keep ZMP on last support
+            return (steps_xy[-2] + steps_xy[-1]) / 2.0
+
+        raise ValueError(f"Unknown state: {s}")
+
+    # Allocate horizon
+    n_samples = int(np.floor(t_horizon / delta_t))
+    t_samples = np.arange(n_samples, dtype=float) * delta_t
+    zmp_horizon = np.zeros((n_samples, 2), dtype=float)
+
+    # Simulated state over the horizon
+    sim_state = state
+    time_in_state = t_state
+    sim_step_idx = step_idx
+
+    for k in range(n_samples):
+        # Advance state machine if needed (except END which just saturates)
+        while sim_state != WalkingState.END and time_in_state >= state_duration(sim_state):
+            time_in_state -= state_duration(sim_state)
+            sim_state, sim_step_idx = next_state_and_step(sim_state, sim_step_idx, steps_foot)
+
+        # Compute ZMP for current simulated state
+        zmp_horizon[k] = zmp_for_state(sim_state, sim_step_idx, time_in_state)
+
+        # Advance local time
+        time_in_state += delta_t
+
+    return t_samples, zmp_horizon
+
+
+class CentroidalPlanner:
+    def __init__(
+        self,
+        dt: float,
+        com_initial_target: np.ndarray,
+        params: PreviewControllerParams,
+    ):
+        self.params = params
+        self.dt = dt
+        self.ctrler_mat = compute_preview_control_matrices(params, dt)
+        self.x = np.array([0.0, com_initial_target[0], 0.0, 0.0], dtype=float)
+        self.y = np.array([0.0, com_initial_target[1], 0.0, 0.0], dtype=float)
+        self.steps_sequence = None
+        self.steps_foot = None
+        self.step_idx = 0
+        self.zmp_ref_horizon = None
+
+    def set_steps_sequence(self, steps_sequence: np.ndarray, steps_foot: typing.List[Foot]):
+        # We assign the new sequence and reset the step counter
+        self.steps_sequence = steps_sequence
+        self.steps_foot = steps_foot
+        self.step_idx = 0
+
+    def update(
+        self,
+        com_initial_target,
+        state: WalkingState,
+        step_idx: int,
+        t_state: float,
+        t_init: float,
+        t_end: float,
+        t_ss: float,
+        t_ds: float,
+    ):
+        # Update control
+        _, self.zmp_ref_horizon = build_zmp_horizon(
+            com_initial_target,
+            t_horizon=(self.params.n_preview_steps - 1) * self.dt,
+            t_state=t_state,
+            state=state,
+            delta_t=self.dt,
+            current_step_idx=step_idx,
+            steps_sequence=self.steps_sequence,
+            steps_foot=self.steps_foot,
+            ss_t=t_ss,
+            ds_t=t_ds,
+            t_init=t_init,
+            t_end=t_end,
+            interp_fn=cubic_spline_interpolation,
+        )
+
+        _, self.x, self.y = update_control(
+            self.ctrler_mat,
+            self.zmp_ref_horizon[0],
+            self.zmp_ref_horizon,
+            self.x.copy(),
+            self.y.copy(),
+        )
+
+    def get_com_pos(self) -> typing.Tuple[float, float]:
+        return self.x[1], self.y[1]
+
+    def get_ref_horizon(self):
+        return self.zmp_ref_horizon

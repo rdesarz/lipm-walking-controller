@@ -55,10 +55,10 @@ def main():
     t_ss = 0.8  # Single support phase time window
     t_ds = 0.3  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
-    t_end = 0.4
+    t_end = 2.0
     n_steps = 5  # Number of steps executed by the robot
     l_stride = 0.1  # Length of the stride
-    max_height_foot = 0.01  # Maximal height of the swing foot
+    max_height_foot = 0.03  # Maximal height of the swing foot
 
     # Preview controller parameters
     t_preview = 1.6  # Time horizon used for the preview controller
@@ -381,11 +381,11 @@ def main():
 
             lf_ref_pos[k] = lf_pose
             lf_pin_pos[k] = talos.data.oMf[talos.left_foot_id].translation
-            lf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_left_6_link")
+            # lf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_left_6_link")
 
             rf_ref_pos[k] = rf_pose
             rf_pin_pos[k] = talos.data.oMf[talos.right_foot_id].translation
-            rf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_right_6_link")
+            # rf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_right_6_link")
 
             rf_forces[k], lf_forces[k] = simulator.get_contact_forces()
 

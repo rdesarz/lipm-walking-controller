@@ -145,6 +145,7 @@ def plot_feet_and_com(
         ax.set_ylabel(coord_labels[coord_idx.index(j)])
         ax.grid(True)
 
+    axes[1].set_ylim((-0.02, 0.06))
     axes[-1].set_xlabel("t [s]")
 
     # One combined legend outside
