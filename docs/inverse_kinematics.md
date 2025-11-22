@@ -125,7 +125,7 @@ Run the following command:
 
 ```bash
 docker run --rm -it -p 7000:7000 \
-  -p 6000:6000 biped-walking-controller \
+  -p 6000:6000 ghcr.io/rdesarz/biped-walking-controller \
   python examples/example_3_walk_inverse_kinematic.py \
   --path-talos-data "/"
 ```

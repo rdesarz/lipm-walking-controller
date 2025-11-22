@@ -8,9 +8,10 @@ import pinocchio as pin
 from matplotlib import pyplot as plt
 
 from biped_walking_controller.foot import (
-    compute_feet_trajectories,
-    BezierCurveFootPathGenerator,
     compute_steps_sequence,
+    compute_swing_foot_pose,
+    compute_time_vector,
+    BezierCurveFootPathGenerator,
 )
 
 from biped_walking_controller.inverse_kinematic import InvKinSolverParams, solve_inverse_kinematics
@@ -31,6 +32,12 @@ from biped_walking_controller.simulation import (
     _compute_base_from_foot_target,
     Simulator,
 )
+from biped_walking_controller.state_machine import (
+    WalkingStateMachineParams,
+    WalkingStateMachine,
+    WalkingState,
+    Foot,
+)
 
 
 def main():
@@ -49,7 +56,7 @@ def main():
     t_ds = 0.3  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
     t_end = 0.4
-    n_steps = 15  # Number of steps executed by the robot
+    n_steps = 5  # Number of steps executed by the robot
     l_stride = 0.1  # Length of the stride
     max_height_foot = 0.01  # Maximal height of the swing foot
 
@@ -176,18 +183,7 @@ def main():
         l_stride=l_stride,
     )
 
-    t, lf_path, rf_path, phases = compute_feet_trajectories(
-        rf_initial_pose=rf_initial_pose,
-        lf_initial_pose=lf_initial_pose,
-        n_steps=n_steps,
-        steps_pose=steps_pose,
-        t_ss=t_ss,
-        t_ds=t_ds,
-        t_init=t_init,
-        t_end=t_end,
-        dt=dt,
-        traj_generator=BezierCurveFootPathGenerator(max_height_foot),
-    )
+    t = compute_time_vector(t_ss, t_ds, t_init, t_end, n_steps, dt)
 
     zmp_ref = compute_zmp_ref(
         t=t,
@@ -200,29 +196,39 @@ def main():
         interp_fn=cubic_spline_interpolation,
     )
 
+    params = WalkingStateMachineParams(
+        t_init=t_init, t_end=t_end, t_ss=t_ss, t_ds=t_ds, force_threshold=50
+    )
+    state_machine = WalkingStateMachine(params=params, initial_state=WalkingState.INIT)
+    state_machine.update_steps(steps_pose, steps_ids)
+
     zmp_padded = np.vstack(
         [zmp_ref, np.repeat(zmp_ref[-1][None, :], ctrler_params.n_preview_steps, axis=0)]
     )
 
-    com_pin_pos = np.zeros((len(phases), 3))
-    com_ref_pos = np.zeros((len(phases), 3))
-    com_pb_pos = np.zeros((len(phases), 3))
+    com_pin_pos = np.zeros((len(t), 3))
+    com_ref_pos = np.zeros((len(t), 3))
+    com_pb_pos = np.zeros((len(t), 3))
 
-    lf_ref_pos = np.zeros((len(phases), 3))
-    lf_pin_pos = np.zeros((len(phases), 3))
-    lf_pb_pos = np.zeros((len(phases), 3))
+    lf_ref_pos = np.zeros((len(t), 3))
+    lf_pin_pos = np.zeros((len(t), 3))
+    lf_pb_pos = np.zeros((len(t), 3))
 
-    rf_ref_pos = np.zeros((len(phases), 3))
-    rf_pin_pos = np.zeros((len(phases), 3))
-    rf_pb_pos = np.zeros((len(phases), 3))
+    rf_ref_pos = np.zeros((len(t), 3))
+    rf_pin_pos = np.zeros((len(t), 3))
+    rf_pb_pos = np.zeros((len(t), 3))
 
-    zmp_pos = np.zeros((len(phases), 3))
+    zmp_pos = np.zeros((len(t), 3))
 
-    rf_forces = np.zeros((len(phases), 1))
-    lf_forces = np.zeros((len(phases), 1))
+    rf_forces = np.zeros((len(t), 1))
+    lf_forces = np.zeros((len(t), 1))
+    states = np.zeros((len(t), 1))
+
+    foot_path_generator = BezierCurveFootPathGenerator(max_height_foot)
+    touchdown_vel = 0.0
 
     # We start the walking phase
-    for k, _ in enumerate(phases[:-2]):
+    for k, _ in enumerate(t[:-2]):
         # Get the current configuration of the robot from the simulator
         q_init = simulator.get_q(talos.model.nq)
 
@@ -230,49 +236,132 @@ def main():
         pin.forwardKinematics(talos.model, talos.data, q_init)
         pin.updateFramePlacements(talos.model, talos.data)
 
+        # Update the control
         zmp_ref_horizon = zmp_padded[k + 1 : k + ctrler_params.n_preview_steps]
 
         _, x_k, y_k = update_control(
             ctrler_mat, zmp_padded[k], zmp_ref_horizon, x_k.copy(), y_k.copy()
         )
 
-        zmp_pos[k] = simulator.get_zmp_pose()
-
         # The CoM target is meant to follow the computed x and y and stay at constant height zc from the feet
         com_target = np.array([x_k[1], y_k[1], ctrler_params.zc])
 
+        # Get contact forces and update the walking state machine
+        rf_forces[k], lf_forces[k] = simulator.get_contact_forces()
+        state_machine.update(t=k * dt, rf_contact_force=rf_forces[k], lf_contact_force=lf_forces[k])
+        states[k] = state_machine.get_current_state().value
+
+        zmp_pos[k] = simulator.get_zmp_pose()
+
+        step_idx = state_machine.get_step_idx()
+
         # Alternate between feet
-        if phases[k] < 0.0:
+        if state_machine.get_current_state() == WalkingState.SS_RIGHT:
             ik_sol_params.fixed_foot_frame = talos.right_foot_id
             ik_sol_params.moving_foot_frame = talos.left_foot_id
 
-            oMf_lf = pin.SE3(oMf_lf_tgt.rotation, lf_path[k])
+            if step_idx < 2:
+                lf_start = lf_initial_pose
+                lf_target = steps_pose[step_idx + 1]
+            else:
+                lf_start = steps_pose[step_idx - 1]
+                lf_target = steps_pose[step_idx + 1]
+
+            rf_pose = steps_pose[step_idx]
+            lf_pose = compute_swing_foot_pose(
+                t_state=state_machine.get_elapsed_time_in_state(k * dt),
+                params=params,
+                step_start=lf_start,
+                step_target=lf_target,
+                touchdown_extension_vel=touchdown_vel,
+                path_generator=foot_path_generator,
+            )
+
+            oMf_lf = pin.SE3(oMf_lf_tgt.rotation, lf_pose)
             q_des, dq = solve_inverse_kinematics(
                 q_init,
                 com_target,
-                oMf_fixed_foot=oMf_rf_tgt,
+                oMf_fixed_foot=pin.SE3(oMf_rf_tgt.rotation, rf_pose),
                 oMf_moving_foot=oMf_lf,
                 oMf_torso=oMf_torso,
                 params=ik_sol_params,
             )
+        elif state_machine.get_current_state() == WalkingState.SS_LEFT:
+            if step_idx < 2:
+                rf_start = rf_initial_pose
+                rf_target = steps_pose[step_idx + 1]
+            else:
+                rf_start = steps_pose[step_idx - 1]
+                rf_target = steps_pose[step_idx + 1]
 
-            oMf_lf_tgt = pin.SE3(oMf_lf_tgt.rotation, lf_path[k + 1])
-
-        else:
             ik_sol_params.fixed_foot_frame = talos.left_foot_id
             ik_sol_params.moving_foot_frame = talos.right_foot_id
 
-            oMf_rf = pin.SE3(oMf_rf_tgt.rotation, rf_path[k])
+            lf_pose = steps_pose[step_idx]
+            rf_pose = compute_swing_foot_pose(
+                t_state=state_machine.get_elapsed_time_in_state(k * dt),
+                params=params,
+                step_start=rf_start,
+                step_target=rf_target,
+                touchdown_extension_vel=touchdown_vel,
+                path_generator=foot_path_generator,
+            )
+
+            oMf_rf = pin.SE3(oMf_rf_tgt.rotation, rf_pose)
             q_des, dq = solve_inverse_kinematics(
                 q_init,
                 com_target,
-                oMf_fixed_foot=oMf_lf_tgt,
+                oMf_fixed_foot=pin.SE3(oMf_lf_tgt.rotation, lf_pose),
                 oMf_moving_foot=oMf_rf,
                 oMf_torso=oMf_torso,
                 params=ik_sol_params,
             )
+        elif state_machine.get_current_state() == WalkingState.END:
+            if steps_ids[-1] == Foot.RIGHT:
+                rf_pose = steps_pose[-2]
+                lf_pose = steps_pose[-1]
+            else:
+                rf_pose = steps_pose[-1]
+                lf_pose = steps_pose[-2]
 
-            oMf_rf_tgt = pin.SE3(oMf_rf_tgt.rotation, rf_path[k + 1])
+            ik_sol_params.fixed_foot_frame = talos.left_foot_id
+            ik_sol_params.moving_foot_frame = talos.right_foot_id
+
+            q_des, dq = solve_inverse_kinematics(
+                q_init,
+                com_target,
+                oMf_fixed_foot=pin.SE3(oMf_lf_tgt.rotation, lf_pose),
+                oMf_moving_foot=pin.SE3(oMf_rf_tgt.rotation, rf_pose),
+                oMf_torso=oMf_torso,
+                params=ik_sol_params,
+            )
+        else:
+            if steps_ids[step_idx] == Foot.RIGHT:
+                if step_idx == 0:
+                    rf_pose = steps_pose[step_idx]
+                    lf_pose = lf_initial_pose
+                else:
+                    rf_pose = steps_pose[step_idx]
+                    lf_pose = steps_pose[step_idx - 1]
+            else:
+                if step_idx == 0:
+                    rf_pose = rf_initial_pose
+                    lf_pose = steps_pose[step_idx]
+                else:
+                    rf_pose = steps_pose[step_idx - 1]
+                    lf_pose = steps_pose[step_idx]
+
+            ik_sol_params.fixed_foot_frame = talos.left_foot_id
+            ik_sol_params.moving_foot_frame = talos.right_foot_id
+
+            q_des, dq = solve_inverse_kinematics(
+                q_init,
+                com_target,
+                oMf_fixed_foot=pin.SE3(oMf_lf_tgt.rotation, lf_pose),
+                oMf_moving_foot=pin.SE3(oMf_rf_tgt.rotation, rf_pose),
+                oMf_torso=oMf_torso,
+                params=ik_sol_params,
+            )
 
         simulator.apply_joints_pos_to_robot(q_des)
 
@@ -290,11 +379,11 @@ def main():
             com_pin_pos[k] = com_pin
             com_pb_pos[k] = simulator.get_robot_com_position()
 
-            lf_ref_pos[k] = lf_path[k]
+            lf_ref_pos[k] = lf_pose
             lf_pin_pos[k] = talos.data.oMf[talos.left_foot_id].translation
             lf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_left_6_link")
 
-            rf_ref_pos[k] = rf_path[k]
+            rf_ref_pos[k] = rf_pose
             rf_pin_pos[k] = talos.data.oMf[talos.right_foot_id].translation
             rf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_right_6_link")
 
@@ -321,7 +410,7 @@ def main():
             zmp_ref=zmp_ref_plot,
         )
 
-        plot_contact_forces_and_state(t=t, force_rf=rf_forces, force_lf=lf_forces)
+        plot_contact_forces_and_state(t=t, force_rf=rf_forces, force_lf=lf_forces, states=states)
 
         plt.show()
 

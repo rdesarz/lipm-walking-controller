@@ -11,8 +11,9 @@ from biped_walking_controller.preview_control import (
 
 from biped_walking_controller.foot import (
     get_active_polygon,
-    compute_feet_path_and_poses,
+    compute_feet_trajectories,
     BezierCurveFootPathGenerator,
+    compute_steps_sequence,
 )
 
 
@@ -44,17 +45,24 @@ def main():
     k_push = int((t_ss + 0.5 * t_ds) / dt)  # mid-DS of first pair
 
     # Build ZMP reference to track
-    t, lf_path, rf_path, steps_pose, phases = compute_feet_path_and_poses(
-        rf_initial_pose,
-        lf_initial_pose,
-        n_steps,
-        t_ss,
-        t_ds,
-        t_init,
-        t_end,
-        l_stride,
-        dt,
-        BezierCurveFootPathGenerator(max_height_foot),
+    steps_pose, steps_ids = compute_steps_sequence(
+        rf_initial_pose=rf_initial_pose,
+        lf_initial_pose=lf_initial_pose,
+        n_steps=n_steps,
+        l_stride=l_stride,
+    )
+
+    t, lf_path, rf_path, phases = compute_feet_trajectories(
+        rf_initial_pose=rf_initial_pose,
+        lf_initial_pose=lf_initial_pose,
+        n_steps=n_steps,
+        steps_pose=steps_pose,
+        t_ss=t_ss,
+        t_ds=t_ds,
+        t_init=t_init,
+        t_final=t_end,
+        dt=dt,
+        traj_generator=BezierCurveFootPathGenerator(max_height_foot),
     )
 
     # Build ZMP reference to track
