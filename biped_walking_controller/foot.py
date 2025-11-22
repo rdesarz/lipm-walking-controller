@@ -9,6 +9,7 @@ Provides:
 """
 
 import math
+
 import numpy as np
 import shapely
 from shapely import Polygon, Point, affinity, union
@@ -185,15 +186,44 @@ class SinusoidFootPathGenerator:
         return path
 
 
-def compute_feet_path_and_poses(
+def compute_steps_sequence(
+    rf_initial_pose: np.ndarray,
+    lf_initial_pose: np.ndarray,
+    n_steps: int,
+    l_stride: float,
+):
+    steps_pose = np.zeros((n_steps + 2, 3))
+    steps_pose[0] = rf_initial_pose
+    steps_ids = [Foot.RIGHT]
+    for i in range(1, n_steps + 1):
+        sign = -1.0 if i % 2 == 0 else 1.0
+        steps_ids.append(Foot.RIGHT if i % 2 == 0 else Foot.LEFT)
+        steps_pose[i] = np.array([i * l_stride, sign * math.fabs(lf_initial_pose[1]), 0.0])
+
+    # Add a last step to have both feet at the same level
+    steps_pose[-1] = steps_pose[-2]
+    steps_pose[-1][1] = steps_pose[-1][1] * -1.0
+
+    return steps_pose, steps_ids
+
+
+def compute_time_vector(t_ss, t_ds, t_init, t_final, n_steps, dt):
+    total_time = t_init + n_steps * (t_ss + t_ds) + (t_ss + t_final)
+    N = int(total_time / dt)
+    t = np.arange(N) * dt
+
+    return t
+
+
+def compute_feet_trajectories(
     rf_initial_pose,
     lf_initial_pose,
     n_steps,
+    steps_pose,
     t_ss,
     t_ds,
     t_init,
     t_final,
-    l_stride,
     dt,
     traj_generator=BezierCurveFootPathGenerator(foot_height=0.1),
 ):
@@ -221,7 +251,7 @@ def compute_feet_path_and_poses(
         Double-support duration between steps.
     t_init : float
         Initial DS duration before stepping.
-    t_final : float
+    t_end : float
         Final DS duration to center the CoM.
     l_stride : float
         Step length along +x for each new foothold.
@@ -258,29 +288,13 @@ def compute_feet_path_and_poses(
     # the same level and a double support step to  place the CoM in the
     # middle of the feet
 
-    total_time = t_init + n_steps * (t_ss + t_ds) + (t_ss + t_final)
-    N = int(total_time / dt)
-    t = np.arange(N) * dt
+    t = compute_time_vector(t_ss, t_ds, t_init, t_final, n_steps, dt)
+    N = len(t)
 
     # Initialize path
     rf_path = np.ones([N, 3]) * rf_initial_pose
     lf_path = np.ones([N, 3]) * lf_initial_pose
     phases = np.ones(N)
-
-    # Switch of the CoM to the right foot implies both feet stays at the same position
-    mask = t < t_init
-    rf_path[mask, :] = rf_initial_pose
-    lf_path[mask, :] = lf_initial_pose
-
-    steps_pose = np.zeros((n_steps + 2, 3))
-    steps_pose[0] = rf_initial_pose
-    for i in range(1, n_steps + 1):
-        sign = -1.0 if i % 2 == 0 else 1.0
-        steps_pose[i] = np.array([i * l_stride, sign * math.fabs(lf_initial_pose[1]), 0.0])
-
-    # Add a last step to have both feet at the same level
-    steps_pose[-1] = steps_pose[-2]
-    steps_pose[-1][1] = steps_pose[-1][1] * -1.0
 
     # Compute motion of left foot
     for k in range(0, n_steps, 2):
@@ -301,7 +315,7 @@ def compute_feet_path_and_poses(
 
         # # Add constant part till the next step
         t_begin = t_init + k * (t_ss + t_ds) + t_ss
-        t_end = total_time
+        t_end = t[-1]
         mask = (t >= t_begin) & (t < t_end)
         lf_path[mask, 0] = steps_pose[k + 1][0]
 
@@ -324,11 +338,11 @@ def compute_feet_path_and_poses(
 
         # # Add constant part till the next step
         t_begin = t_init + k * (t_ss + t_ds) + t_ss
-        t_end = total_time
+        t_end = t[-1]
         mask = (t >= t_begin) & (t < t_end)
         rf_path[mask, 0] = steps_pose[k + 1][0]
 
-    return t, lf_path, rf_path, steps_pose, phases
+    return t, lf_path, rf_path, phases
 
 
 def clamp_to_polygon(pnt: np.ndarray, poly: Polygon):

@@ -8,8 +8,9 @@ import pinocchio as pin
 from matplotlib import pyplot as plt
 
 from biped_walking_controller.foot import (
-    compute_feet_path_and_poses,
+    compute_feet_trajectories,
     BezierCurveFootPathGenerator,
+    compute_steps_sequence,
 )
 
 from biped_walking_controller.inverse_kinematic import InvKinSolverParams, solve_inverse_kinematics
@@ -167,16 +168,24 @@ def main():
     lf_initial_pose = oMf_lf_tgt.translation
     rf_initial_pose = oMf_rf_tgt.translation
 
-    t, lf_path, rf_path, steps_pose, phases = compute_feet_path_and_poses(
-        rf_initial_pose,
-        lf_initial_pose,
-        n_steps,
-        t_ss,
-        t_ds,
-        t_init,
-        t_end,
-        l_stride,
-        dt,
+    # Build ZMP reference to track
+    steps_pose, steps_ids = compute_steps_sequence(
+        rf_initial_pose=rf_initial_pose,
+        lf_initial_pose=lf_initial_pose,
+        n_steps=n_steps,
+        l_stride=l_stride,
+    )
+
+    t, lf_path, rf_path, phases = compute_feet_trajectories(
+        rf_initial_pose=rf_initial_pose,
+        lf_initial_pose=lf_initial_pose,
+        n_steps=n_steps,
+        steps_pose=steps_pose,
+        t_ss=t_ss,
+        t_ds=t_ds,
+        t_init=t_init,
+        t_end=t_end,
+        dt=dt,
         traj_generator=BezierCurveFootPathGenerator(max_height_foot),
     )
 

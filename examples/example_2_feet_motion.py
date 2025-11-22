@@ -1,7 +1,11 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from biped_walking_controller.foot import compute_feet_path_and_poses, BezierCurveFootPathGenerator
+from biped_walking_controller.foot import (
+    compute_feet_trajectories,
+    BezierCurveFootPathGenerator,
+    compute_steps_sequence,
+)
 
 
 def main():
@@ -19,18 +23,25 @@ def main():
     l_stride = 0.3
     max_height_foot = 0.2
 
-    # Build feet path and poses
-    t, lf_path, rf_path, steps_pose, _ = compute_feet_path_and_poses(
-        rf_initial_pose,
-        lf_initial_pose,
-        n_steps,
-        t_ss,
-        t_ds,
-        t_init,
-        t_end,
-        l_stride,
-        dt,
-        traj_generator=BezierCurveFootPathGenerator(foot_height=max_height_foot),
+    # Build ZMP reference to track
+    steps_pose, steps_ids = compute_steps_sequence(
+        rf_initial_pose=rf_initial_pose,
+        lf_initial_pose=lf_initial_pose,
+        n_steps=n_steps,
+        l_stride=l_stride,
+    )
+
+    t, lf_path, rf_path, phases = compute_feet_trajectories(
+        rf_initial_pose=rf_initial_pose,
+        lf_initial_pose=lf_initial_pose,
+        n_steps=n_steps,
+        steps_pose=steps_pose,
+        t_ss=t_ss,
+        t_ds=t_ds,
+        t_init=t_init,
+        t_final=t_end,
+        dt=dt,
+        traj_generator=BezierCurveFootPathGenerator(max_height_foot),
     )
 
     # Figure
