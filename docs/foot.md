@@ -31,7 +31,7 @@ docker run --rm -it \
   --env DISPLAY \
   -v /tmp/.X11-unix:/tmp/.X11-unix:ro \
   --device /dev/dri:/dev/dri \
-  biped-walking-controller \
+  ghcr.io/rdesarz/biped-walking-controller \
   python examples/example_2_feet_motion.py 
 ```
 
