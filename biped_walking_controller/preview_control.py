@@ -1,11 +1,10 @@
-import abc
 import typing
-from abc import abstractmethod
 from dataclasses import dataclass
-from enum import Enum
 
 import numpy as np
 from scipy.linalg import solve_discrete_are
+
+from biped_walking_controller.state_machine import WalkingState, Foot
 
 
 def linear_interpolation(t: np.ndarray, pos_begin: np.ndarray, pos_end: np.ndarray) -> np.ndarray:
@@ -262,6 +261,7 @@ def update_control(ctrl_mat: PreviewControllerMatrices, current_zmp, zmp_ref, x,
     y_next[1:] = ctrl_mat.A @ y[1:] + ctrl_mat.B.ravel() * u[1]
 
     return u, x_next, y_next
+
 
 def build_zmp_horizon(
     com_initial_target,
