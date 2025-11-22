@@ -1,12 +1,17 @@
 # tests/test_preview_control_unittest.py
 import unittest
 import numpy as np
-from biped_walking_controller.preview_control import (
-    PreviewControllerParams,
-    compute_preview_control_matrices,
+
+from biped_walking_controller.state_machine import (
+    Foot,
     WalkingStateMachineParams,
     WalkingStateMachine,
     WalkingState,
+)
+
+from biped_walking_controller.preview_control import (
+    PreviewControllerParams,
+    compute_preview_control_matrices,
 )
 
 from numpy.linalg import eigvals
@@ -102,10 +107,11 @@ class TestWalkingPhase(unittest.TestCase):
     def setUp(self):
         self.params = WalkingStateMachineParams()
         self.steps = np.ones([5, 3])  # Five steps
+        self.steps_foot = [Foot.RIGHT, Foot.LEFT, Foot.RIGHT, Foot.LEFT, Foot.RIGHT]
 
     def test_begin_init(self):
         wsm = WalkingStateMachine(self.params, initial_state=WalkingState.INIT)
-        wsm.update_steps(self.steps)
+        wsm.update_steps(self.steps, self.steps_foot)
 
         wsm.update(t=0.0, rf_contact_force=100.0, lf_contact_force=100.0)
 
@@ -113,7 +119,7 @@ class TestWalkingPhase(unittest.TestCase):
 
     def test_init_to_ds(self):
         wsm = WalkingStateMachine(self.params, initial_state=WalkingState.INIT)
-        wsm.update_steps(self.steps)
+        wsm.update_steps(self.steps, self.steps_foot)
         wsm.update(t=0.0, rf_contact_force=100.0, lf_contact_force=100.0)
 
         wsm.update(t=self.params.t_init + 0.1, rf_contact_force=0.0, lf_contact_force=100.0)
@@ -122,7 +128,7 @@ class TestWalkingPhase(unittest.TestCase):
 
     def test_begin_double_support(self):
         wsm = WalkingStateMachine(self.params, initial_state=WalkingState.DS)
-        wsm.update_steps(self.steps)
+        wsm.update_steps(self.steps, self.steps_foot)
 
         wsm.update(t=0.0, rf_contact_force=100.0, lf_contact_force=100.0)
 
@@ -130,7 +136,7 @@ class TestWalkingPhase(unittest.TestCase):
 
     def test_switch_to_single_support(self):
         wsm = WalkingStateMachine(self.params, initial_state=WalkingState.DS)
-        wsm.update_steps(self.steps)
+        wsm.update_steps(self.steps, self.steps_foot)
 
         wsm.update(t=self.params.t_ds + 0.1, rf_contact_force=0.0, lf_contact_force=0.0)
 
@@ -138,7 +144,7 @@ class TestWalkingPhase(unittest.TestCase):
 
     def test_do_not_switch_to_ds_if_beginning_of_phase(self):
         wsm = WalkingStateMachine(self.params, initial_state=WalkingState.SS_RIGHT)
-        wsm.update_steps(self.steps)
+        wsm.update_steps(self.steps, self.steps_foot)
 
         wsm.update(t=0.0, rf_contact_force=0.0, lf_contact_force=self.params.force_threshold + 10)
 
@@ -146,7 +152,7 @@ class TestWalkingPhase(unittest.TestCase):
 
     def test_do_not_switch_to_ds_if_force_too_low(self):
         wsm = WalkingStateMachine(self.params, initial_state=WalkingState.SS_RIGHT)
-        wsm.update_steps(self.steps)
+        wsm.update_steps(self.steps, self.steps_foot)
 
         wsm.update(
             t=self.params.t_ss * 0.75,
@@ -158,7 +164,7 @@ class TestWalkingPhase(unittest.TestCase):
 
     def test_switch_to_ds_if_force_too_low_and_phase_close_to_end(self):
         wsm = WalkingStateMachine(self.params, initial_state=WalkingState.SS_LEFT)
-        wsm.update_steps(self.steps)
+        wsm.update_steps(self.steps, self.steps_foot)
 
         wsm.update(
             t=self.params.t_ss * 0.75,

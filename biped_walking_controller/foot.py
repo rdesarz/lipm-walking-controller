@@ -15,10 +15,7 @@ import shapely
 from shapely import Polygon, Point, affinity, union
 from shapely.ops import nearest_points
 
-
-import math
-import numpy as np
-from typing import Tuple
+from biped_walking_controller.state_machine import WalkingStateMachineParams, Foot
 
 
 def bezier_quintic(P: np.ndarray, s: np.ndarray) -> np.ndarray:
@@ -456,3 +453,37 @@ def get_active_polygon(t: float, steps_pose, t_ss: float, t_ds: float, foot_shap
         return compute_single_support_polygon(steps_pose[-1], foot_shape)
     else:
         return compute_double_support_polygon(steps_pose[i], steps_pose[i + 1], foot_shape)
+
+
+def compute_swing_foot_pose(
+    t_state: float,
+    params: WalkingStateMachineParams,
+    step_start: np.ndarray,
+    step_target: np.ndarray,
+    touchdown_extension_vel: float,
+    path_generator,
+) -> np.ndarray:
+    """
+    Compute swing foot pose for current state time with late touchdown extension.
+
+    - For t_state in [0, t_ss]: nominal min-jerk swing between step_start and step_target.
+    - For t_state > t_ss and no contact: keep moving the *commanded* foot down
+      below the nominal ground height at constant velocity.
+      The physics/contact solver will clamp penetration.
+    - As soon as contact_force > force_threshold: freeze at step_target.
+    """
+    t_ss = params.t_ss
+
+    if t_state <= t_ss:
+        # Normal swing phase
+        s = np.clip(t_state / t_ss, 0.0, 1.0)
+
+        return path_generator(step_start, step_target, s)
+
+    # Late-touchdown extension phase
+    # We assume step_target[2] is the nominal ground height.
+    # After nominal end of swing, keep commanding the foot below that plane.
+    dt = t_state - t_ss
+    pos = step_target.copy()
+    pos[2] = step_target[2] - touchdown_extension_vel * dt
+    return pos
