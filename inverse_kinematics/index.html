@@ -1,0 +1,1324 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../foot/">
+      
+      
+        <link rel="next" href="../simulation/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Inverse kinematics - Biped Walking Controller</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#differential-inverse-kinematics" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Biped Walking Controller" class="md-header__button md-logo" aria-label="Biped Walking Controller" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Biped Walking Controller
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Inverse kinematics
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/rdesarz/biped-walking-controller.git" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Biped Walking Controller" class="md-nav__button md-logo" aria-label="Biped Walking Controller" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Biped Walking Controller
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/rdesarz/biped-walking-controller.git" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../preview_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Zero-Moment Point (ZMP) Preview Controller
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../foot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Foot trajectory generation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inverse kinematics
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inverse kinematics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Introduction
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kinematic-task" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kinematic task
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tasks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-fixed-stance-foot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Fixed (Stance) Foot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-swing-moving-foot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Swing (Moving) Foot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-torso-orientation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Torso Orientation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-center-of-mass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Center of Mass
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#optimization-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optimization Problem
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration in simulation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Introduction
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kinematic-task" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kinematic task
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tasks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-fixed-stance-foot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Fixed (Stance) Foot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-swing-moving-foot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Swing (Moving) Foot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-torso-orientation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Torso Orientation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-center-of-mass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Center of Mass
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#optimization-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optimization Problem
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="differential-inverse-kinematics">Differential Inverse Kinematics</h1>
+<h2 id="introduction">Introduction</h2>
+<p>In the context of this project, the goal of the inverse kinematics task is to compute joint velocities to track
+the desired position of the Center of Mass and foot poses. Each of this goal is called a task. Walking requires several
+tasks to be handled at the same time:</p>
+<ul>
+<li>Keeping the stand foot exactly at a desired 6D pose</li>
+<li>Tracking the swing foot trajectory</li>
+<li>Tracking the CoM trajectory</li>
+<li>Maintaining the torso straight (postural task)</li>
+<li>Locking some joints as the LIPM model relies on some assumptions on the upper body restrained motion.</li>
+<li>Constraints due to the joints properties (position and/or velocity limits)</li>
+</ul>
+<p>Those tasks might be concurrent. Therefore, the inverse kinematics is well-suited to be seen as an optimization
+problem with tasks being either a cost to reduce or a constraint to fulfill. A way to solve this is by using a
+hierarchical
+Quadratic Program where each task is assigned with a priority (tracking the CoM is more important that postural task for
+instance). In
+practice it is hard to find an open-source solver for this kind of optimization problem. Therefore it is modelled as a
+QP with different weights for each task. A task with high priority will have a higher weight than a low priority task.
+This is the approach used for instance by the <a href="https://stephane-caron.github.io/pink/index.html">pink</a> library from
+which this part is inspired.</p>
+<h2 id="kinematic-task">Kinematic task</h2>
+<p>The goal of a task is to reduce the error (residual) between the desired pose and the actual pose of a frame on the
+robot. A detailed explanation on how to compute this error for a pose and how to define it as an optimization problem
+is described in <a href="https://scaron.info/robotics/jacobian-of-a-kinematic-task-and-derivatives-on-manifolds.html">this article</a>.</p>
+<h2 id="tasks">Tasks</h2>
+<p>We detail here each specific task that we need to fulfill when solving the inverse kinematics problem. For the implementation, 
+we rely on the Pinocchio library to compute Jacobian and CoM position.</p>
+<h3 id="1-fixed-stance-foot">1. Fixed (Stance) Foot</h3>
+<p>The stance foot is a hard equality constraint in the QP:</p>
+<div class="arithmatex">\[
+J_{\text{ff}}\, \Delta q = e_{\text{ff}}
+\]</div>
+<p>where <span class="arithmatex">\(J_{\text{ff}}\)</span> is the Jacobian of the fixed foot kinematic task, <span class="arithmatex">\(\Delta q\)</span> the joint-space increment,
+and <span class="arithmatex">\(e_{\text{ff}}\)</span> the pose task residual.</p>
+<p>This constraint ensures the stance foot remains fixed in the world frame. It enforces a no-slip contact at velocity
+level.</p>
+<h3 id="2-swing-moving-foot">2. Swing (Moving) Foot</h3>
+<p>Residual and Jacobian <span class="arithmatex">\(e_{mf}, J_{mf}\)</span> enter the cost as a weighted least squares term, allowing the swing foot to track
+its desired trajectory.</p>
+<h3 id="3-torso-orientation">3. Torso Orientation</h3>
+<p>We want to maintain the torso orientation. We select only the angular part of the Jacobian and residual with the matrix <code>S = [0, I]</code>:</p>
+<div class="arithmatex">\[
+e_{\text{torso}} = S\, e_{\text{torso6}}, \quad
+J_{\text{torso}} = S\, J_{\text{torso6}}.
+\]</div>
+<p>This aligns the torso without constraining its position.</p>
+<h3 id="4-center-of-mass">4. Center of Mass</h3>
+<p>The center of mass is only constrained by its position. This is modelled as a cost in the optimization problem. The 
+jacobian <span class="arithmatex">\(J_{\text{com}}\)</span> is the jacobian of the center of mass. The residual is defined below:</p>
+<div class="arithmatex">\[
+e_{\text{com}} = (x_{\text{com}}^{\star} - x_{\text{com}}), \quad
+\]</div>
+<p>This task pulls the CoM toward the desired position.</p>
+<hr />
+<h2 id="optimization-problem">Optimization Problem</h2>
+<p>We want to solve for <span class="arithmatex">\(\Delta q\)</span> the QP:</p>
+<div class="arithmatex">\[\begin{equation}
+\begin{aligned}
+\min_{\Delta q}\quad &amp; \tfrac{1}{2}\,\Delta q^\top H \Delta q + g^\top \Delta q \\
+\text{s.t.}\quad &amp; A \Delta q = b
+\end{aligned}
+\label{eq:qp_eq_only}
+\end{equation}\]</div>
+<p>where</p>
+<div class="arithmatex">\[\begin{align}
+H &amp;= 
+J_{\mathrm{com}}^\top W_{\mathrm{com}} J_{\mathrm{com}}
++ J_{\mathrm{torso}}^\top W_{\mathrm{torso}} J_{\mathrm{torso}}
++ J_{\mathrm{mf}}^\top W_{\mathrm{mf}} J_{\mathrm{mf}}
++ \mu I, \\[12pt]
+g &amp;= 
+- J_{\mathrm{com}}^\top W_{\mathrm{com}} e_{\mathrm{com}}
+- J_{\mathrm{torso}}^\top W_{\mathrm{torso}} e_{\mathrm{torso}}
+- J_{\mathrm{mf}}^\top W_{\mathrm{mf}} e_{\mathrm{mf}},
+\end{align}\]</div>
+<p>and</p>
+<div class="arithmatex">\[\begin{align}
+A &amp;= J_{ff}  &amp;  b &amp;= e_{ff}
+\end{align}\]</div>
+<ul>
+<li>The term <span class="arithmatex">\(\lambda I\)</span> provides Tikhonov damping to improve numerical stability</li>
+</ul>
+<p>This is solved with <code>qpsolvers.solve_qp</code> (OSQP backend). The solution is then integrated using Pinocchio to compute the 
+desired joints position.</p>
+<hr />
+<h2 id="example">Example</h2>
+<p>Inverse kinematics are computed to track CoM and foot trajectories using the Talos model.
+This produces a full kinematic walking sequence without dynamic simulation.</p>
+<p>Run the following command:</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span>-p<span class="w"> </span><span class="m">7000</span>:7000<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span><span class="m">6000</span>:6000<span class="w"> </span>ghcr.io/rdesarz/biped-walking-controller<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>python<span class="w"> </span>examples/example_3_walk_inverse_kinematic.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--path-talos-data<span class="w"> </span><span class="s2">&quot;/&quot;</span>
+</code></pre></div>
+<p>Then go to the following address in your browser: <a href="http://127.0.0.1:7000/static/">http://127.0.0.1:7000/static/</a>.</p>
+<p>The result should look like this:</p>
+<p align="center">
+  <img src="../img/inverse_kinematic.gif" width="460"/>
+</p>
+
+<h2 id="references">References</h2>
+<ul>
+<li>
+<p>Caron, S.<br />
+<em>Jacobian of a kinematic task and derivatives on manifolds.</em><br />
+  Available online
+  at  https://scaron.info/robotics/differential-inverse-kinematics.html,
+  accessed 2025.<br />
+  (Detailed explanations and examples for frame kinematics, Jacobian computation, and task-space control using
+  Pinocchio.)</p>
+</li>
+<li>
+<p>Caron, S.<br />
+<em>Differential inverse kinematics.</em><br />
+  Available online
+  at https://scaron.info/robotics/jacobians.html,
+  accessed 2025.<br />
+  (General introduction to differential inverse kinematics.)</p>
+</li>
+<li>
+<p>Caron, S.<br />
+<em>Pink: Python inverse kinematics based on Pinocchio</em> <br />
+  License Apache-2.0 <br />
+  Available at https://github.com/stephane-caron/pink 
+  2025</p>
+</li>
+</ul>
+<h1 id="code-api">Code API</h1>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<a id="biped_walking_controller.inverse_kinematic"></a>
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="biped_walking_controller.inverse_kinematic.InvKinSolverParams" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">InvKinSolverParams</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">InvKinSolverParams</span><span class="p">(</span><span class="n">fixed_foot_frame</span><span class="p">,</span> <span class="n">moving_foot_frame</span><span class="p">,</span> <span class="n">torso_frame</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">w_torso</span><span class="p">,</span> <span class="n">w_com</span><span class="p">,</span> <span class="n">w_mf</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">locked_joints</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Parameters for inverse-kinematics QP with CoM, feet, and torso tasks.</p>
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.inverse_kinematic.InvKinSolverParams.fixed_foot_frame">fixed_foot_frame</span></code></td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Pinocchio frame id of the stance foot (hard equality).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.inverse_kinematic.InvKinSolverParams.moving_foot_frame">moving_foot_frame</span></code></td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Pinocchio frame id of the swing foot (soft task).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.inverse_kinematic.InvKinSolverParams.torso_frame">torso_frame</span></code></td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Pinocchio frame id for torso orientation task (angular only).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.inverse_kinematic.InvKinSolverParams.model">model</span></code></td>
+            <td>
+                  <code><span title="pinocchio.Model">Model</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Pinocchio kinematic model.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.inverse_kinematic.InvKinSolverParams.data">data</span></code></td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Pinocchio data buffer associated with <code>model</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.inverse_kinematic.InvKinSolverParams.w_torso">w_torso</span></code></td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Weight of torso angular task in the QP cost.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.inverse_kinematic.InvKinSolverParams.w_com">w_com</span></code></td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Weight of CoM task in the QP cost.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.inverse_kinematic.InvKinSolverParams.w_mf">w_mf</span></code></td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Weight of moving-foot 6D task in the QP cost.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.inverse_kinematic.InvKinSolverParams.mu">mu</span></code></td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Damping on joint velocities in the QP (Tikhonov term).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.inverse_kinematic.InvKinSolverParams.dt">dt</span></code></td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Time step used by caller; not used here directly but kept for API symmetry.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.inverse_kinematic.InvKinSolverParams.locked_joints">locked_joints</span></code></td>
+            <td>
+                  <code><span title="list">list</span>[<span title="int">int</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional list of joints or velocity indices to lock.
+Each element can be:
+  - a Pinocchio joint id j in [0, model.njoints), which locks its velocity span
+  - or a direct velocity index v in [0, model.nv)</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="biped_walking_controller.inverse_kinematic.solve_inverse_kinematics" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">solve_inverse_kinematics</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">solve_inverse_kinematics</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">com_target</span><span class="p">,</span> <span class="n">oMf_fixed_foot</span><span class="p">,</span> <span class="n">oMf_moving_foot</span><span class="p">,</span> <span class="n">oMf_torso</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>One-step inverse kinematics via QP with a hard stance-foot constraint.</p>
+
+
+<details class="problem" open>
+  <summary>Problem</summary>
+  <p>Minimize
+    w_com || J_com dq - e_com ||^2
+  + w_torso || J_torso dq - e_torso ||^2
+  + w_mf || J_mf dq - e_mf ||^2
+  + mu || dq ||^2
+subject to
+    J_ff dq = e_ff        (fixed-foot 6D equality)</p>
+</details>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>q</code>
+            </td>
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(<span title="nq">nq</span>))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Current configuration.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>com_target</code>
+            </td>
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(3))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Desired CoM position in world.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>oMf_fixed_foot</code>
+            </td>
+            <td>
+                  <code><span title="pinocchio.SE3">SE3</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Desired world pose of stance foot.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>oMf_moving_foot</code>
+            </td>
+            <td>
+                  <code><span title="pinocchio.SE3">SE3</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Desired world pose of swing foot.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>oMf_torso</code>
+            </td>
+            <td>
+                  <code><span title="pinocchio.SE3">SE3</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Desired world pose of torso (only angular part is used).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>params</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="InvKinSolverParams
+
+
+  
+      dataclass
+   (biped_walking_controller.inverse_kinematic.InvKinSolverParams)" href="#biped_walking_controller.inverse_kinematic.InvKinSolverParams">InvKinSolverParams</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Weights, model/data, damping, and optional locked joints.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>q_next</code></td>            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(<span title="nq">nq</span>))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Integrated configuration <code>integrate(model, q, dq)</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+<td><code>dq</code></td>            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(<span title="nv">nv</span>))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Generalized velocity solution (zeros for locked indices).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <ul>
+<li>Builds a reduced QP on active velocity indices if <code>locked_joints</code> is set.</li>
+<li>CoM task uses Pinocchio <code>jacobianCenterOfMass</code>.</li>
+<li>Torso task selects angular rows via S = [0 I; 0 0].</li>
+<li>QP is solved with <code>qpsolvers.solve_qp(..., solver="osqp")</code>.</li>
+</ul>
+</details>
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 Romain Desarzens
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
