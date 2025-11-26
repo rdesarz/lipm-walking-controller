@@ -195,7 +195,28 @@ def compute_steps_sequence(
     for i in range(1, n_steps + 1):
         sign = -1.0 if i % 2 == 0 else 1.0
         steps_ids.append(Foot.RIGHT if i % 2 == 0 else Foot.LEFT)
-        steps_pose[i] = np.array([i * l_stride, sign * math.fabs(lf_initial_pose[1]), 0.0])
+        steps_pose[i] = np.array(
+            [i * l_stride, sign * math.fabs(lf_initial_pose[1]), rf_initial_pose[2]]
+        )
+
+    # Add a last step to have both feet at the same level
+    steps_pose[-1] = steps_pose[-2]
+    steps_pose[-1][1] = steps_pose[-1][1] * -1.0
+
+    return steps_pose, steps_ids
+
+
+def compute_onplace_steps_sequence(
+    rf_initial_pose: np.ndarray,
+    lf_initial_pose: np.ndarray,
+    n_steps: int,
+):
+    steps_pose = np.zeros((n_steps + 2, 3))
+    steps_pose[0] = rf_initial_pose
+    steps_ids = [Foot.RIGHT]
+    for i in range(1, n_steps + 1):
+        steps_ids.append(Foot.RIGHT if i % 2 == 0 else Foot.LEFT)
+        steps_pose[i] = rf_initial_pose if i % 2 == 0 else lf_initial_pose
 
     # Add a last step to have both feet at the same level
     steps_pose[-1] = steps_pose[-2]
