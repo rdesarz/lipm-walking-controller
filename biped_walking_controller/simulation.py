@@ -550,7 +550,7 @@ class Simulator:
         """
         pb.resetDebugVisualizerCamera(
             cameraDistance=4.0,
-            cameraYaw=50,
+            cameraYaw=120,
             cameraPitch=-40,
             cameraTargetPosition=[x, y, z],
         )
