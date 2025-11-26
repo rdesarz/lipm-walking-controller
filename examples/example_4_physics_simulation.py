@@ -293,8 +293,8 @@ def main():
                 params=ik_sol_params,
             )
 
-            oMf_lf_tgt = pin.SE3(oMf_lf_tgt.rotation, lf_path[k + 1])
-
+            if phases[k + 1] > 0.0:
+                oMf_lf_tgt = pin.SE3(oMf_lf_tgt.rotation, lf_path[k + 1])
         else:
             ik_sol_params.fixed_foot_frame = talos.left_foot_id
             ik_sol_params.moving_foot_frame = talos.right_foot_id
@@ -309,7 +309,8 @@ def main():
                 params=ik_sol_params,
             )
 
-            oMf_rf_tgt = pin.SE3(oMf_rf_tgt.rotation, rf_path[k + 1])
+            if phases[k + 1] < 0.0:
+                oMf_rf_tgt = pin.SE3(oMf_rf_tgt.rotation, rf_path[k + 1])
 
         simulator.apply_joints_pos_to_robot(q_des)
 
