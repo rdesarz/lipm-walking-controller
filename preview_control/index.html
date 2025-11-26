@@ -1,0 +1,1953 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../getting_started/">
+      
+      
+        <link rel="next" href="../foot/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Zero-Moment Point (ZMP) Preview Controller - Biped Walking Controller</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#zero-moment-point-and-balance-criterion" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Biped Walking Controller" class="md-header__button md-logo" aria-label="Biped Walking Controller" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Biped Walking Controller
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Zero-Moment Point (ZMP) Preview Controller
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/rdesarz/biped-walking-controller.git" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Biped Walking Controller" class="md-nav__button md-logo" aria-label="Biped Walking Controller" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Biped Walking Controller
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/rdesarz/biped-walking-controller.git" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Zero-Moment Point (ZMP) Preview Controller
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Zero-Moment Point (ZMP) Preview Controller
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zero-moment-point-and-balance-criterion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zero Moment Point and Balance Criterion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linear-inverted-pendulum-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linear Inverted Pendulum Model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#preview-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preview Control
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Code API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#biped_walking_controller.preview_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        preview_control
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#biped_walking_controller.preview_control.PreviewControllerParams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PreviewControllerParams
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#biped_walking_controller.preview_control.PreviewControllerMatrices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PreviewControllerMatrices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#biped_walking_controller.preview_control.compute_zmp_ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        compute_zmp_ref
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#biped_walking_controller.preview_control.compute_preview_control_matrices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        compute_preview_control_matrices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#biped_walking_controller.preview_control.update_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_control
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#biped_walking_controller.preview_control.build_zmp_horizon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_zmp_horizon
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../foot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Foot trajectory generation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inverse_kinematics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inverse kinematics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration in simulation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zero-moment-point-and-balance-criterion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zero Moment Point and Balance Criterion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linear-inverted-pendulum-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linear Inverted Pendulum Model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#preview-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preview Control
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Code API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#biped_walking_controller.preview_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        preview_control
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#biped_walking_controller.preview_control.PreviewControllerParams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PreviewControllerParams
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#biped_walking_controller.preview_control.PreviewControllerMatrices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PreviewControllerMatrices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#biped_walking_controller.preview_control.compute_zmp_ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        compute_zmp_ref
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#biped_walking_controller.preview_control.compute_preview_control_matrices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        compute_preview_control_matrices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#biped_walking_controller.preview_control.update_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_control
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#biped_walking_controller.preview_control.build_zmp_horizon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_zmp_horizon
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h2 id="zero-moment-point-and-balance-criterion">Zero Moment Point and Balance Criterion</h2>
+<p>The Zero Moment Point (ZMP) is the point on the ground where the resultant contact forces between the feet and the
+ground produce no moment about the horizontal axes. To maintain balance, the ZMP must remain within the robot’s support
+polygon, defined as the convex hull of the contact areas of the feet. Intuitively, this ensures that the ground reaction
+forces can generate a counteracting moment to keep the feet flat and prevent tipping, maintaining dynamic equilibrium.
+For a more thorough explanation I
+recommend <a href="https://scaron.info/robotics/zero-tilting-moment-point.html">this blog post</a> by Stéphane Caron.</p>
+<h2 id="linear-inverted-pendulum-model">Linear Inverted Pendulum Model</h2>
+<p>The first step of the controller is to define a reference ZMP trajectory, alternating from one foot to the other at each
+step. This reference is generated using a cubic spline that interpolates the position of each foot. 
+The objective is to establish a relationship between the position of this reference ZMP and the robot’s Center of Mass (
+CoM).
+This relationship can be derived from a simplified model of the robot’s dynamics known as the <strong>Linear Inverted Pendulum
+Model (LIPM)</strong>.</p>
+<p>The LIPM is derived under the following assumptions:</p>
+<ul>
+<li>The mass of the body is concentrated at a single point, the Center of Mass (CoM).</li>
+<li>Legs are massless and do not contribute to the system dynamics.</li>
+<li>The CoM moves on a horizontal plane at a constant height, eliminating vertical motion coupling.</li>
+<li>No angular momentum is generated about the CoM, meaning the upper body remains still to avoid producing additional
+  moments.</li>
+</ul>
+<p>Under these assumptions and for small angles, the inverted pendulum dynamics can be linearized, leading to the following
+second-order linear equation:</p>
+<div class="arithmatex">\[
+\ddot{x}_c = \frac{g}{z_c} (x_c - x_z)
+\]</div>
+<p>where <span class="arithmatex">\(x_z\)</span> denotes the ZMP, <span class="arithmatex">\(x_c\)</span> the CoM projection, and <span class="arithmatex">\(z_c\)</span> the constant CoM height.</p>
+<h2 id="preview-control">Preview Control</h2>
+<p>In Kajita's paper, the idea is to use a preview control in order to track and anticipate the ZMP reference change.
+The control input minimizes a quadratic cost over a finite horizon:</p>
+<div class="arithmatex">\[
+J = \sum_{k=0}^{\infty} \left( Q_e e_k^2 + x_k^T Q_x x_k + R \Delta u_k^2 \right)
+\]</div>
+<p>yielding a feedback + integral + preview law.<br />
+The resulting controller anticipates future ZMP references, ensuring stable walking trajectories.</p>
+<p>The result of the preview controller can be observed on the figure below. The upper-left figure shows the trajectory of
+the CoM in red over time, the generated reference ZMP in blue and the support polygon in green. The upper-right and
+lower-right figures show the trajectory of the ZMP and COM over time for x and y pos. Finally, the lower-left figure
+shows the preview gains that are computed.</p>
+<p align="center">
+  <img src="../img/preview_control.gif" />
+</p>
+
+<h2 id="example">Example</h2>
+<p>You can reproduce the example displayed on the figure by launching the script <code>example_1_lipm_preview_control.py</code>. We
+recommend you to use Docker as explained in the installation part:</p>
+<div class="highlight"><pre><span></span><code>xhost<span class="w"> </span>+local:root
+docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env<span class="w"> </span>DISPLAY<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span>/tmp/.X11-unix:/tmp/.X11-unix:ro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--device<span class="w"> </span>/dev/dri:/dev/dri<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>ghcr.io/rdesarz/biped-walking-controller<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>python<span class="w"> </span>examples/example_1_lipm_preview_control.py<span class="w"> </span>
+</code></pre></div>
+<p>The parameters used in this script are the following:</p>
+<div class="highlight"><pre><span></span><code><span class="n">dt</span> <span class="o">=</span> <span class="mf">0.005</span>  <span class="c1"># Delta of time of the model simulation</span>
+<span class="n">t_preview</span> <span class="o">=</span> <span class="mf">1.6</span>  <span class="c1"># Time horizon used for the preview controller</span>
+<span class="n">t_ss</span> <span class="o">=</span> <span class="mf">0.6</span>  <span class="c1"># Single support phase time window</span>
+<span class="n">t_ds</span> <span class="o">=</span> <span class="mf">0.4</span>  <span class="c1"># Double support phase time window</span>
+<span class="n">t_init</span> <span class="o">=</span> <span class="mf">2.0</span>  <span class="c1"># Initialization phase (transition from still position to first step)</span>
+<span class="n">t_end</span> <span class="o">=</span> <span class="mf">1.0</span>  <span class="c1"># Final phase (transition from walking to standstill position)</span>
+<span class="n">foot_shape</span> <span class="o">=</span> <span class="n">Polygon</span><span class="p">(</span>
+    <span class="p">((</span><span class="mf">0.11</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.11</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.05</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.11</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.05</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.11</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)))</span>  <span class="c1"># Shape of the foot for support polygon computation</span>
+<span class="n">n_steps</span> <span class="o">=</span> <span class="mi">5</span>  <span class="c1"># Number of steps</span>
+<span class="n">l_stride</span> <span class="o">=</span> <span class="mf">0.3</span>  <span class="c1"># Length of the stride</span>
+</code></pre></div>
+<h2 id="references">References</h2>
+<ul>
+<li>
+<p>Kajita, S., Kanehiro, F., Kaneko, K., Fujiwara, K., Harada, K., Yokoi, K., &amp; Hirukawa, H.<br />
+<em>Biped Walking Pattern Generation by Using Preview Control of Zero-Moment Point.</em><br />
+<em>Proceedings of the IEEE International Conference on Robotics and Automation (ICRA), 2003.</em></p>
+</li>
+<li>
+<p>Katayama, T., Ohki, T., Inoue, T., &amp; Kato, T.<br />
+<em>Design of an Optimal Controller for a Discrete-Time System Subject to Previewable Demand.</em><br />
+<em>International Journal of Control</em>, vol. 41, no. 3, pp. 677–699, 1985.</p>
+</li>
+<li>
+<p>Caron, S.<br />
+<em>Zero-tilting moment point.</em><br />
+  Available online
+  at  <a href="https://scaron.info/robotics/zero-tilting-moment-point.html">https://scaron.info/robotics/zero-tilting-moment-point.html</a>,
+  accessed 2025.<br />
+  (Detailed explanations and examples for Zero-tilting moment point)</p>
+</li>
+</ul>
+<h1 id="code-api">Code API</h1>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<a id="biped_walking_controller.preview_control"></a>
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="biped_walking_controller.preview_control.PreviewControllerParams" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">PreviewControllerParams</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">PreviewControllerParams</span><span class="p">(</span><span class="n">zc</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">Qe</span><span class="p">,</span> <span class="n">Qx</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">n_preview_steps</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Hyperparameters for preview control gain synthesis.</p>
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.preview_control.PreviewControllerParams.zc">zc</span></code></td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>CoM height (meters).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.preview_control.PreviewControllerParams.g">g</span></code></td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Gravity magnitude (m/s^2).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.preview_control.PreviewControllerParams.Qe">Qe</span></code></td>
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(1, 1))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Weight on integrated ZMP tracking error.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.preview_control.PreviewControllerParams.Qx">Qx</span></code></td>
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(3, 3))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Weight on state [x, x_dot, x_ddot].</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.preview_control.PreviewControllerParams.R">R</span></code></td>
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(1, 1))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Weight on jerk input magnitude.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.preview_control.PreviewControllerParams.n_preview_steps">n_preview_steps</span></code></td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of preview items P used to build Gd (uses P-1 gains).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="biped_walking_controller.preview_control.PreviewControllerMatrices" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">PreviewControllerMatrices</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">PreviewControllerMatrices</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">Gi</span><span class="p">,</span> <span class="n">Gx</span><span class="p">,</span> <span class="n">Gd</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Structure that contains the Discrete LIPM-with-jerk preview-control matrices. Serves as input for the update of the
+control command.</p>
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.preview_control.PreviewControllerMatrices.A">A</span></code></td>
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(3, 3))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>State transition of [x, x_dot, x_ddot] (per-axis).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.preview_control.PreviewControllerMatrices.B">B</span></code></td>
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(3, 1))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Input matrix for jerk u.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.preview_control.PreviewControllerMatrices.C">C</span></code></td>
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(1, 3))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Output mapping from state to ZMP.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.preview_control.PreviewControllerMatrices.Gi">Gi</span></code></td>
+            <td>
+                  <code>(<span title="float">float</span> or <span title="ndarray">ndarray</span>, <span title="shape">shape</span>(1, 1))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Integral gain on ZMP tracking error.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.preview_control.PreviewControllerMatrices.Gx">Gx</span></code></td>
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(1, 4))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>State-feedback gain on [e_int, x, x_dot, x_ddot].</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="biped_walking_controller.preview_control.PreviewControllerMatrices.Gd">Gd</span></code></td>
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(<span title="P">P</span> - 1))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Preview gains for future ZMP references over P-1 steps.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="biped_walking_controller.preview_control.compute_zmp_ref" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">compute_zmp_ref</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">compute_zmp_ref</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">com_initial_pose</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="n">ss_t</span><span class="p">,</span> <span class="n">ds_t</span><span class="p">,</span> <span class="n">t_init</span><span class="p">,</span> <span class="n">t_final</span><span class="p">,</span> <span class="n">interp_fn</span><span class="o">=</span><span class="n">cubic_spline_interpolation</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Build a piecewise ZMP reference on the ground plane from footsteps. The ZMP reference starts at com_initial_pose.
+Then during t_init period of time, the ZMP shift to the right foot. It then goes from a step to another. Then it
+goes back between the final position of the feet during t_final.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>t</code>
+            </td>
+            <td>
+                  <code>(<span title="array">array</span> - <span title="like">like</span>, <span title="shape">shape</span>(<span title="T">T</span>))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Time samples (seconds), monotonically increasing.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>com_initial_pose</code>
+            </td>
+            <td>
+                  <code>(<span title="array">array</span> - <span title="like">like</span>, <span title="shape">shape</span>(2))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Initial ZMP target under the CoM at startup (x, y).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>steps</code>
+            </td>
+            <td>
+                  <code>(<span title="array">array</span> - <span title="like">like</span>, <span title="shape">shape</span>(<span title="N">N</span>, 2))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Footstep sequence on the ground (x, y) per step.
+The last element is the final midpoint target.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>ss_t</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Duration of single support per step.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>ds_t</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Duration of double support between steps.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>t_init</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Ramp time from initial CoM ZMP to the first step.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>t_final</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Final blending time to bring ZMP to the midpoint of the last two feet.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>zmp_ref</code></td>            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(<span title="T">T</span>, 2))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>ZMP reference trajectory on the ground plane.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <ul>
+<li>For each step: hold current foot during SS, then linearly blend to the next
+  foot during DS.</li>
+<li>Last phase: SS on the penultimate foot, then blend to the average of the
+  last two foot positions during <code>t_final</code>.</li>
+</ul>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="biped_walking_controller.preview_control.compute_preview_control_matrices" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">compute_preview_control_matrices</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">compute_preview_control_matrices</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Construct preview-control gains for the discrete LIPM with jerk input.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>params</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="PreviewControllerParams
+
+
+  
+      dataclass
+   (biped_walking_controller.preview_control.PreviewControllerParams)" href="#biped_walking_controller.preview_control.PreviewControllerParams">PreviewControllerParams</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Model and cost weights.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>dt</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Discrete time step.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="PreviewControllerMatrices
+
+
+  
+      dataclass
+   (biped_walking_controller.preview_control.PreviewControllerMatrices)" href="#biped_walking_controller.preview_control.PreviewControllerMatrices">PreviewControllerMatrices</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Controller matrices (A, B, C, Gi, Gx, Gd) reused at runtime.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="method" open>
+  <summary>Method</summary>
+  <ul>
+<li>Build augmented system with integral of ZMP error.</li>
+<li>Solve discrete-time algebraic Riccati equation for K.</li>
+<li>Derive integral gain Gi, state gain Gx, and preview gains Gd for P-1 future
+  reference samples using the closed-loop matrix <code>Ac</code>.</li>
+</ul>
+</details>
+
+<details class="references" open>
+  <summary>References</summary>
+  <ul>
+<li>Kajita et al., 2003. Biped walking pattern generation by using preview control.</li>
+<li>Katayama et al., 1985. Design of an optimal preview controller.</li>
+</ul>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="biped_walking_controller.preview_control.update_control" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">update_control</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">update_control</span><span class="p">(</span><span class="n">ctrl_mat</span><span class="p">,</span> <span class="n">current_zmp</span><span class="p">,</span> <span class="n">zmp_ref</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>One-step preview control update for x and y axes.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>ctrl_mat</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="PreviewControllerMatrices
+
+
+  
+      dataclass
+   (biped_walking_controller.preview_control.PreviewControllerMatrices)" href="#biped_walking_controller.preview_control.PreviewControllerMatrices">PreviewControllerMatrices</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Precomputed controller matrices.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>current_zmp</code>
+            </td>
+            <td>
+                  <code>(<span title="array">array</span> - <span title="like">like</span>, <span title="shape">shape</span>(2))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Measured ZMP at current step [zx, zy].</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>zmp_ref</code>
+            </td>
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(<span title="P">P</span> - 1, 2))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Future ZMP references used with Gd for both axes. First element is the
+next sample after the current time.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>x</code>
+            </td>
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(4))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Augmented states per axis: [e_int, pos, vel, acc].</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>y</code>
+            </td>
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(4))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Augmented states per axis: [e_int, pos, vel, acc].</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>u</code></td>            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(2))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Jerk command for x and y.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+<td></td>            <td>
+                  <code>x_next, y_next : ndarray, shape (4,)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Next augmented states after applying u.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <ul>
+<li>Integral state is updated with ZMP output error, then state is propagated
+  with (A, B) and jerk input.</li>
+<li>Uses the same scalar Gi and vector Gx for both axes.</li>
+</ul>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="biped_walking_controller.preview_control.build_zmp_horizon" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">build_zmp_horizon</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">build_zmp_horizon</span><span class="p">(</span><span class="n">com_initial_target</span><span class="p">,</span> <span class="n">t_horizon</span><span class="p">,</span> <span class="n">t_state</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">delta_t</span><span class="p">,</span> <span class="n">current_step_idx</span><span class="p">,</span> <span class="n">steps_sequence</span><span class="p">,</span> <span class="n">steps_foot</span><span class="p">,</span> <span class="n">ss_t</span><span class="p">,</span> <span class="n">ds_t</span><span class="p">,</span> <span class="n">t_init</span><span class="p">,</span> <span class="n">t_end</span><span class="p">,</span> <span class="n">interp_fn</span><span class="o">=</span><span class="n">cubic_spline_interpolation</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Build a ZMP reference over a preview horizon based on the current walking state.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>t_horizon</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Length of the preview horizon [s].</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>t_state</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Time elapsed in the current state [s].</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>state</code>
+            </td>
+            <td>
+                  <code><span title="biped_walking_controller.state_machine.WalkingState">WalkingState</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Current walking state (INIT, DS, SS_LEFT, SS_RIGHT, END).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>delta_t</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Sampling period of the preview horizon [s].</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>current_step_idx</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Index of the current step in <code>steps_sequence</code>. Interpreted as:
+- In SS: index of the current support foot.
+- In DS: index of the <em>target</em> foot (previous is current_step_idx - 1).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>steps_sequence</code>
+            </td>
+            <td>
+                  <code><span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Sequence of footsteps. Shape (N, 2) or (N, &gt;=2).
+Only the (x, y) components are used as ZMP targets.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>ss_t</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Duration of a single-support phase [s].</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>ds_t</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Duration of a double-support phase [s].</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>t_init</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Duration of the INIT phase [s].</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>t_end</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Duration of the END phase [s].</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>interp_fn</code>
+            </td>
+            <td>
+                  <code><span title="callable">callable</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Interpolation function used in double support.
+Expected signature: interp_fn(alpha, p0, p1)
+where alpha in [0, 1], p0, p1 are 2D numpy arrays.</p>
+              </div>
+            </td>
+            <td>
+                  <code><span title="biped_walking_controller.preview_control.cubic_spline_interpolation">cubic_spline_interpolation</span></code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>t_samples</code></td>            <td>
+                  <code>(<span title="numpy.ndarray">ndarray</span>, <span title="shape">shape</span>(<span title="N">N</span>))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Relative time samples over the horizon, starting at 0.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+<td><code>zmp_horizon</code></td>            <td>
+                  <code>(<span title="numpy.ndarray">ndarray</span>, <span title="shape">shape</span>(<span title="N">N</span>, 2))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>ZMP reference (x, y) at each time sample.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <ul>
+<li>This function does NOT enforce continuity with the <em>previous</em> ZMP reference.
+  At each call, the horizon is built from scratch from the current state.</li>
+<li>State-transition logic is a simple cyclic model:
+  INIT -&gt; DS -&gt; SS -&gt; DS -&gt; SS -&gt; ... -&gt; END
+  and the step index increments when leaving an SS state.</li>
+</ul>
+</details>
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div><p>options:
+members_order: source
+heading_level: 2</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 Romain Desarzens
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
