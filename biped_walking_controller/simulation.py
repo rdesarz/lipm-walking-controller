@@ -421,6 +421,11 @@ class Simulator:
             pb.GUI if launch_gui else pb.DIRECT,
             options="--window_title=PyBullet --width=1920 --height=1080",
         )
+
+        pb.configureDebugVisualizer(pb.COV_ENABLE_GUI, 0)
+        pb.configureDebugVisualizer(pb.COV_ENABLE_RGB_BUFFER_PREVIEW, 0)
+        pb.configureDebugVisualizer(pb.COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0)
+        pb.configureDebugVisualizer(pb.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
         pb.setAdditionalSearchPath(pybullet_data.getDataPath())
         pb.setGravity(0, 0, -9.81)
         pb.setTimeStep(dt)
