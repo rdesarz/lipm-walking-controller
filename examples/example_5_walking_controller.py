@@ -15,7 +15,7 @@ from biped_walking_controller.foot import (
 )
 
 from biped_walking_controller.inverse_kinematic import InvKinSolverParams, solve_inverse_kinematics
-from biped_walking_controller.plot import plot_feet_and_com, plot_contact_forces_and_state
+from biped_walking_controller.plot import plot_feet_and_com, plot_contact_forces
 
 from biped_walking_controller.preview_control import (
     PreviewControllerParams,
@@ -49,19 +49,19 @@ def main():
 
     np.set_printoptions(suppress=True, precision=3)
 
-    dt = 1.0 / 240.0
+    dt = 1.0 / 1000.0
 
     # ZMP reference parameters
     t_ss = 0.8  # Single support phase time window
     t_ds = 0.3  # Double support phase time window
-    t_init = 2.0  # Initialization phase (transition from still position to first step)
-    t_end = 0.4
-    n_steps = 5  # Number of steps executed by the robot
+    t_init = 5.0  # Initialization phase (transition from still position to first step)
+    t_end = 2.0
+    n_steps = 3  # Number of steps executed by the robot
     l_stride = 0.1  # Length of the stride
-    max_height_foot = 0.01  # Maximal height of the swing foot
+    max_height_foot = 0.005  # Maximal height of the swing foot
 
     # Preview controller parameters
-    t_preview = 1.6  # Time horizon used for the preview controller
+    t_preview = 4.0  # Time horizon used for the preview controller
     ctrler_params = PreviewControllerParams(
         zc=0.89,
         g=9.81,
@@ -82,7 +82,7 @@ def main():
         path_to_robot_urdf=args.path_talos_data.expanduser()
         / "talos_data"
         / "urdf"
-        / "talos_full.urdf",
+        / "talos_full_v2.urdf",
         model=talos,
         launch_gui=args.launch_gui,
     )
@@ -172,8 +172,9 @@ def main():
         simulator.reset_robot_configuration(q_des)
         simulator.step()
 
-    lf_initial_pose = oMf_lf_tgt.translation
-    rf_initial_pose = oMf_rf_tgt.translation
+    foot_offset = np.array([0.0, 0.0, 0.002])
+    lf_initial_pose = oMf_lf_tgt.translation + foot_offset
+    rf_initial_pose = oMf_rf_tgt.translation + foot_offset
 
     # Build ZMP reference to track
     steps_pose, steps_ids = compute_steps_sequence(
@@ -252,6 +253,13 @@ def main():
         states[k] = state_machine.get_current_state().value
 
         zmp_pos[k] = simulator.get_zmp_pose()
+        # zmp_pos[k] = np.array(
+        #     [
+        #         x_k[1] - ctrler_params.zc / ctrler_params.g * x_k[3],
+        #         y_k[1] - ctrler_params.zc / ctrler_params.g * y_k[3],
+        #         0.0,
+        #     ]
+        # )
 
         step_idx = state_machine.get_step_idx()
 
@@ -268,6 +276,7 @@ def main():
                 lf_target = steps_pose[step_idx + 1]
 
             rf_pose = steps_pose[step_idx]
+            # lf_pose = lf_start
             lf_pose = compute_swing_foot_pose(
                 t_state=state_machine.get_elapsed_time_in_state(k * dt),
                 params=params,
@@ -298,6 +307,7 @@ def main():
             ik_sol_params.moving_foot_frame = talos.right_foot_id
 
             lf_pose = steps_pose[step_idx]
+            # rf_pose = rf_start
             rf_pose = compute_swing_foot_pose(
                 t_state=state_machine.get_elapsed_time_in_state(k * dt),
                 params=params,
@@ -306,7 +316,6 @@ def main():
                 touchdown_extension_vel=touchdown_vel,
                 path_generator=foot_path_generator,
             )
-
             oMf_rf = pin.SE3(oMf_rf_tgt.rotation, rf_pose)
             q_des, dq = solve_inverse_kinematics(
                 q_init,
@@ -381,11 +390,11 @@ def main():
 
             lf_ref_pos[k] = lf_pose
             lf_pin_pos[k] = talos.data.oMf[talos.left_foot_id].translation
-            lf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_left_6_link")
+            # lf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_left_6_link")
 
             rf_ref_pos[k] = rf_pose
             rf_pin_pos[k] = talos.data.oMf[talos.right_foot_id].translation
-            rf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_right_6_link")
+            # rf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_right_6_link")
 
             rf_forces[k], lf_forces[k] = simulator.get_contact_forces()
 
@@ -410,7 +419,7 @@ def main():
             zmp_ref=zmp_ref_plot,
         )
 
-        plot_contact_forces_and_state(t=t, force_rf=rf_forces, force_lf=lf_forces, states=states)
+        plot_contact_forces(t=t, force_rf=rf_forces, force_lf=lf_forces)
 
         plt.show()
 
