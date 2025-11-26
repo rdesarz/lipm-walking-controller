@@ -221,6 +221,9 @@ def main():
     rf_forces = np.zeros((len(phases), 1))
     lf_forces = np.zeros((len(phases), 1))
 
+    if args.record_video:
+        simulator.start_video_record()
+
     # We start the walking phase
     for k, _ in enumerate(phases[:-2]):
         # Get the current configuration of the robot from the simulator
@@ -299,6 +302,9 @@ def main():
             rf_pb_pos[k], _ = simulator.get_robot_frame_pos("leg_right_6_link")
 
             rf_forces[k], lf_forces[k] = simulator.get_contact_forces()
+
+    if args.record_video:
+        simulator.stop_video_record(duration=t[-1])
 
     if args.plot_results:
 
