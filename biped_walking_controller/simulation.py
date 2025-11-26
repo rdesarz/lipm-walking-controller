@@ -394,7 +394,14 @@ class Simulator:
     The robot is loaded at the origin and a flat horizontal plane is added at z=0.
     """
 
-    def __init__(self, dt, path_to_robot_urdf: Path, model, launch_gui=True):
+    def __init__(
+        self,
+        dt,
+        path_to_robot_urdf: Path,
+        model,
+        launch_gui=True,
+        n_solver_iter=200,
+    ):
         """
         Initialize PyBullet, load ground and TALOS, and set physics.
 
@@ -432,11 +439,11 @@ class Simulator:
         pb.setRealTimeSimulation(0)
         pb.setPhysicsEngineParameter(
             fixedTimeStep=dt,
-            numSolverIterations=100,
+            numSolverIterations=n_solver_iter,
             numSubSteps=1,
             useSplitImpulse=1,
             splitImpulsePenetrationThreshold=0.01,
-            contactSlop=0.001,
+            contactSlop=0.005,
             erp=0.2,
             contactERP=0.2,
             frictionERP=0.05,
