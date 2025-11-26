@@ -1,5 +1,7 @@
 import math
 import argparse
+import typing
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -14,7 +16,7 @@ from biped_walking_controller.foot import (
 )
 
 from biped_walking_controller.inverse_kinematic import InvKinSolverParams, solve_inverse_kinematics
-from biped_walking_controller.plot import plot_feet_and_com, plot_contact_forces_and_state
+from biped_walking_controller.plot import plot_feet_and_com, plot_contact_forces
 
 from biped_walking_controller.preview_control import (
     PreviewControllerParams,
@@ -33,18 +35,9 @@ from biped_walking_controller.simulation import (
 )
 
 
-def main():
-    p = argparse.ArgumentParser()
-    p.add_argument("--path-talos-data", type=Path, help="Path to talos_data root")
-    p.add_argument("--plot-results", action="store_true")
-    p.add_argument("--launch-gui", action="store_true")
-    args = p.parse_args()
-
-    np.set_printoptions(suppress=True, precision=3)
-
+@dataclass
+class GeneralParams:
     dt = 1.0 / 240.0
-
-    # ZMP reference parameters
     t_ss = 0.8  # Single support phase time window
     t_ds = 0.3  # Double support phase time window
     t_init = 2.0  # Initialization phase (transition from still position to first step)
@@ -52,18 +45,55 @@ def main():
     n_steps = 15  # Number of steps executed by the robot
     l_stride = 0.1  # Length of the stride
     max_height_foot = 0.01  # Maximal height of the swing foot
+    t_preview = 1.6
+    n_solver_iter = 200
 
-    # Preview controller parameters
-    t_preview = 1.6  # Time horizon used for the preview controller
+
+def get_standard_params() -> typing.Tuple[GeneralParams, PreviewControllerParams]:
+    general_params = GeneralParams()
+
     ctrler_params = PreviewControllerParams(
         zc=0.89,
         g=9.81,
         Qe=1.0,
         Qx=np.zeros((3, 3)),
         R=1e-6,
-        n_preview_steps=int(round(t_preview / dt)),
+        n_preview_steps=int(round(general_params.t_preview / general_params.dt)),
     )
-    ctrler_mat = compute_preview_control_matrices(ctrler_params, dt)
+
+    return general_params, ctrler_params
+
+
+def get_accurate_sim_params() -> typing.Tuple[GeneralParams, PreviewControllerParams]:
+    general_params, ctrler_params = get_standard_params()
+
+    # Specific params
+    general_params.dt = 1.0 / 1000.0
+    general_params.t_ss = 0.6
+    general_params.t_ds = 0.1
+    general_params.n_steps = 15
+    general_params.l_stride = 0.15
+    general_params.max_height_foot = 0.02
+    general_params.n_solver_iter = 1500
+
+    return general_params, ctrler_params
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--path-talos-data", type=Path, help="Path to talos_data root")
+    p.add_argument("--plot-results", action="store_true")
+    p.add_argument("--launch-gui", action="store_true")
+    p.add_argument("--record-video", action="store_true")
+    p.add_argument("--accurate-sim", action="store_true")
+    args = p.parse_args()
+
+    np.set_printoptions(suppress=True, precision=3)
+
+    if args.accurate_sim:
+        scen_params, ctrler_params = get_accurate_sim_params()
+    else:
+        scen_params, ctrler_params = get_standard_params()
 
     # Initialize Talos pinocchio model
     talos = Talos(path_to_model=args.path_talos_data.expanduser(), reduced=False)
@@ -71,13 +101,14 @@ def main():
 
     # Initialize simulator
     simulator = Simulator(
-        dt=dt,
+        dt=scen_params.dt,
         path_to_robot_urdf=args.path_talos_data.expanduser()
         / "talos_data"
         / "urdf"
         / "talos_full.urdf",
         model=talos,
         launch_gui=args.launch_gui,
+        n_solver_iter=scen_params.n_solver_iter,
     )
 
     # Compute the right and left foot position as well as the base initial position
@@ -110,7 +141,7 @@ def main():
         w_com=10.0,
         w_mf=100.0,
         mu=1e-4,
-        dt=dt,
+        dt=scen_params.dt,
         locked_joints=list(talos.get_locked_joints_idx()),
     )
     q_des, dq = solve_inverse_kinematics(
@@ -132,10 +163,13 @@ def main():
     # Then we start a stabilization phase where the robot has to maintain its CoM at a fixed position
     pb.setGravity(0, 0, -9.81)
 
+    # Setup the controller matrices
+    ctrler_mat = compute_preview_control_matrices(ctrler_params, scen_params.dt)
+
     x_k = np.array([0.0, com_initial_target[0], 0.0, 0.0], dtype=float)
     y_k = np.array([0.0, com_initial_target[1], 0.0, 0.0], dtype=float)
 
-    for _ in range(math.ceil(1.0 / dt)):
+    for _ in range(math.ceil(1.0 / scen_params.dt)):
         # Get the current configuration of the robot from the simulator
         q_init = simulator.get_q(talos.model.nq)
 
@@ -172,31 +206,31 @@ def main():
     steps_pose, steps_ids = compute_steps_sequence(
         rf_initial_pose=rf_initial_pose,
         lf_initial_pose=lf_initial_pose,
-        n_steps=n_steps,
-        l_stride=l_stride,
+        n_steps=scen_params.n_steps,
+        l_stride=scen_params.l_stride,
     )
 
     t, lf_path, rf_path, phases = compute_feet_trajectories(
         rf_initial_pose=rf_initial_pose,
         lf_initial_pose=lf_initial_pose,
-        n_steps=n_steps,
+        n_steps=scen_params.n_steps,
         steps_pose=steps_pose,
-        t_ss=t_ss,
-        t_ds=t_ds,
-        t_init=t_init,
-        t_end=t_end,
-        dt=dt,
-        traj_generator=BezierCurveFootPathGenerator(max_height_foot),
+        t_ss=scen_params.t_ss,
+        t_ds=scen_params.t_ds,
+        t_init=scen_params.t_init,
+        t_final=scen_params.t_end,
+        dt=scen_params.dt,
+        traj_generator=BezierCurveFootPathGenerator(scen_params.max_height_foot),
     )
 
     zmp_ref = compute_zmp_ref(
         t=t,
         com_initial_pose=com_initial_target[0:2],
         steps=steps_pose[:, 0:2],
-        ss_t=t_ss,
-        ds_t=t_ds,
-        t_init=t_init,
-        t_final=t_end,
+        ss_t=scen_params.t_ss,
+        ds_t=scen_params.t_ds,
+        t_init=scen_params.t_init,
+        t_final=scen_params.t_end,
         interp_fn=cubic_spline_interpolation,
     )
 
@@ -220,6 +254,9 @@ def main():
 
     rf_forces = np.zeros((len(phases), 1))
     lf_forces = np.zeros((len(phases), 1))
+
+    if args.record_video:
+        simulator.start_video_record()
 
     # We start the walking phase
     for k, _ in enumerate(phases[:-2]):
@@ -256,8 +293,8 @@ def main():
                 params=ik_sol_params,
             )
 
-            oMf_lf_tgt = pin.SE3(oMf_lf_tgt.rotation, lf_path[k + 1])
-
+            if phases[k + 1] > 0.0:
+                oMf_lf_tgt = pin.SE3(oMf_lf_tgt.rotation, lf_path[k + 1])
         else:
             ik_sol_params.fixed_foot_frame = talos.left_foot_id
             ik_sol_params.moving_foot_frame = talos.right_foot_id
@@ -272,7 +309,8 @@ def main():
                 params=ik_sol_params,
             )
 
-            oMf_rf_tgt = pin.SE3(oMf_rf_tgt.rotation, rf_path[k + 1])
+            if phases[k + 1] < 0.0:
+                oMf_rf_tgt = pin.SE3(oMf_rf_tgt.rotation, rf_path[k + 1])
 
         simulator.apply_joints_pos_to_robot(q_des)
 
@@ -300,6 +338,9 @@ def main():
 
             rf_forces[k], lf_forces[k] = simulator.get_contact_forces()
 
+    if args.record_video:
+        simulator.stop_video_record(duration=t[-1])
+
     if args.plot_results:
 
         zmp_ref_plot = np.zeros((zmp_ref.shape[0], 3))
@@ -321,7 +362,7 @@ def main():
             zmp_ref=zmp_ref_plot,
         )
 
-        plot_contact_forces_and_state(t=t, force_rf=rf_forces, force_lf=lf_forces)
+        plot_contact_forces(t=t, force_rf=rf_forces, force_lf=lf_forces)
 
         plt.show()
 

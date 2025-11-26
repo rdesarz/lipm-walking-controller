@@ -1,3 +1,5 @@
+import os
+import subprocess
 import typing
 from pathlib import Path
 from typing import Tuple, Dict
@@ -340,6 +342,50 @@ def _compute_force(
     return total_force, [mean_x, mean_y, mean_z]
 
 
+def _process_video(filename: str, simulation_duration: float, start_time: float = 0.0):
+    cmd = [
+        "ffprobe",
+        "-i",
+        filename,
+        "-show_entries",
+        "format=duration",
+        "-v",
+        "quiet",
+        "-of",
+        "csv=p=0",
+    ]
+
+    out = subprocess.check_output(cmd).decode().strip()
+    video_duration = float(out)
+
+    ratio = simulation_duration / video_duration
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-ss",
+        str(start_time / ratio),
+        "-i",
+        filename,
+        "-filter:v",
+        f"setpts={ratio}*PTS",
+        "-r",
+        "60",
+        "-c:v",
+        "libx264",
+        "-crf",
+        "18",
+        "-preset",
+        "slow",
+        "output.mp4",
+    ]
+
+    subprocess.run(cmd, check=True)
+
+    # Remove the original file and rename the output to the original file
+    os.remove(filename)
+    os.rename("output.mp4", filename)
+
+
 class Simulator:
     """
     Thin PyBullet wrapper for loading a robot URDF and driving it from
@@ -348,7 +394,14 @@ class Simulator:
     The robot is loaded at the origin and a flat horizontal plane is added at z=0.
     """
 
-    def __init__(self, dt, path_to_robot_urdf: Path, model, launch_gui=True):
+    def __init__(
+        self,
+        dt,
+        path_to_robot_urdf: Path,
+        model,
+        launch_gui=True,
+        n_solver_iter=200,
+    ):
         """
         Initialize PyBullet, load ground and TALOS, and set physics.
 
@@ -375,17 +428,22 @@ class Simulator:
             pb.GUI if launch_gui else pb.DIRECT,
             options="--window_title=PyBullet --width=1920 --height=1080",
         )
+
+        pb.configureDebugVisualizer(pb.COV_ENABLE_GUI, 0)
+        pb.configureDebugVisualizer(pb.COV_ENABLE_RGB_BUFFER_PREVIEW, 0)
+        pb.configureDebugVisualizer(pb.COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0)
+        pb.configureDebugVisualizer(pb.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
         pb.setAdditionalSearchPath(pybullet_data.getDataPath())
         pb.setGravity(0, 0, -9.81)
         pb.setTimeStep(dt)
         pb.setRealTimeSimulation(0)
         pb.setPhysicsEngineParameter(
             fixedTimeStep=dt,
-            numSolverIterations=100,
+            numSolverIterations=n_solver_iter,
             numSubSteps=1,
             useSplitImpulse=1,
             splitImpulsePenetrationThreshold=0.01,
-            contactSlop=0.001,
+            contactSlop=0.005,
             erp=0.2,
             contactERP=0.2,
             frictionERP=0.05,
@@ -417,6 +475,8 @@ class Simulator:
 
         self._displayed_lines = None
         self._displayed_points = None
+        self.log_id = None
+        self.filename = None
 
     def step(self):
         """
@@ -497,7 +557,7 @@ class Simulator:
         """
         pb.resetDebugVisualizerCamera(
             cameraDistance=4.0,
-            cameraYaw=50,
+            cameraYaw=120,
             cameraPitch=-40,
             cameraTargetPosition=[x, y, z],
         )
@@ -718,3 +778,12 @@ class Simulator:
         px = -M[1] / F[2]
         py = M[0] / F[2]
         return np.array([px, py, 0.0])
+
+    def start_video_record(self, filename: str = "recording.mp4"):
+        self.filename = filename
+        self.log_id = pb.startStateLogging(pb.STATE_LOGGING_VIDEO_MP4, self.filename)
+
+    def stop_video_record(self, duration: float, t_start: float = 0.0):
+        pb.stopStateLogging(self.log_id)
+
+        _process_video(self.filename, duration, t_start)
