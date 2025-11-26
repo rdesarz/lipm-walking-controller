@@ -2,7 +2,6 @@ from biped_walking_controller.foot import (
     compute_double_support_polygon,
     compute_single_support_polygon,
 )
-from biped_walking_controller.state_machine import WalkingState
 
 
 def plot_steps(axes, steps_pose, step_shape):
@@ -145,6 +144,7 @@ def plot_feet_and_com(
         ax.set_ylabel(coord_labels[coord_idx.index(j)])
         ax.grid(True)
 
+    axes[1].set_ylim((-0.02, 0.06))
     axes[-1].set_xlabel("t [s]")
 
     # One combined legend outside
@@ -187,36 +187,20 @@ def plot_feet_and_com(
     ax2.set_title(f"{title_prefix} — plan view (x–y)")
 
 
-def plot_contact_forces_and_state(
+def plot_contact_forces(
     t: float,
     force_rf: float,
     force_lf: float,
-    states: WalkingState,
-    title: str = "Contact force Fx",
 ):
     t = np.asarray(t).ravel()
     force_rf = np.asarray(force_rf).ravel()
     force_lf = np.asarray(force_lf).ravel()
     assert t.size == force_rf.size == force_lf.size
 
-    fig, ax = plt.subplots(2, figsize=(12, 8), layout="constrained", sharex=True)
-    ax[0].plot(t, force_rf, label="right foot", marker="*")
-    ax[0].plot(t, force_lf, label="left foot", marker="*")
-    ax[0].set_ylabel("Normal force [N]")
-    ax[0].set_title("Contact Force Fx")
-    ax[0].grid(True)
-    ax[0].legend()
-
-    ticks = []
-    labels = []
-    for data in WalkingState:
-        ticks.append(data.value)
-        labels.append(data.name)
-
-    ax[1].plot(t, states, label="state", marker="*")
-    ax[1].set_xlabel("t [s]")
-    ax[1].set_ylabel("State [-]")
-    ax[1].set_title("State")
-    ax[1].set_yticks(ticks, labels)
-    ax[1].grid(True)
-    ax[1].legend()
+    fig, ax = plt.subplots(figsize=(12, 8), layout="constrained", sharex=True)
+    ax.plot(t, force_rf, label="right foot", marker="*")
+    ax.plot(t, force_lf, label="left foot", marker="*")
+    ax.set_ylabel("Normal force [N]")
+    ax.set_title("Contact Force Fx")
+    ax.grid(True)
+    ax.legend()
